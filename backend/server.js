@@ -15,6 +15,7 @@ const onboardingRoutes = require('./routes/onboarding');
 const offboardingRoutes = require('./routes/offboarding');
 const preferencesRoutes = require('./routes/preferences');
 const usersRoutes = require('./routes/users');
+const jumpcloudRoutes = require('./routes/jumpcloud');
 const { initializeDatabase } = require('./config/database');
 
 const app = express();
@@ -59,6 +60,7 @@ app.use('/api/onboarding', onboardingRoutes);
 app.use('/api/offboarding', offboardingRoutes);
 app.use('/api/preferences', preferencesRoutes);
 app.use('/api/users', usersRoutes);
+app.use('/api/jumpcloud', jumpcloudRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

@@ -182,6 +182,12 @@ class Dashboard {
                 this.updateRecentAssignments(data.activeAssignments);
                 this.updateAlerts(data.alerts);
                 
+                // Load JumpCloud users count
+                this.loadJumpCloudUsersCount();
+                
+                // Load JumpCloud systems count
+                this.loadJumpCloudSystemsCount();
+                
                 // Load new hires
                 if (window.employeesManager) {
                     console.log('Loading new hires...');
@@ -672,6 +678,99 @@ class Dashboard {
             }
         } catch (error) {
             console.error('Error simulating Hibob user:', error);
+        }
+    }
+
+    // Load JumpCloud users count
+    async loadJumpCloudUsersCount() {
+        try {
+            console.log('Loading JumpCloud users count...');
+            const response = await window.auth.apiRequest('/jumpcloud/users/count');
+            
+            if (response.ok) {
+                const data = await response.json();
+                console.log('JumpCloud users data:', data);
+                
+                // Update the total users card with JumpCloud data
+                const totalUsersEl = document.getElementById('totalUsers');
+                if (totalUsersEl) {
+                    totalUsersEl.textContent = data.totalUsers;
+                    console.log('Updated totalUsers from JumpCloud to:', data.totalUsers);
+                    
+                    // Add a small indicator showing the data source
+                    const sourceIndicator = document.getElementById('totalUsersSource');
+                    if (sourceIndicator) {
+                        sourceIndicator.textContent = data.source;
+                        sourceIndicator.title = data.note || 'Data from JumpCloud';
+                    }
+                }
+                
+                // Show a notification about the data source
+                if (data.note && data.note.includes('Simulated')) {
+                    this.addNotification({
+                        type: 'warning',
+                        title: 'JumpCloud API',
+                        message: 'Usando datos simulados. Verifica la API key de JumpCloud para datos reales.',
+                        timestamp: new Date()
+                    });
+                }
+                
+                // Show detailed error information if available
+                if (data.error) {
+                    this.addNotification({
+                        type: 'error',
+                        title: 'JumpCloud API Error',
+                        message: `${data.error}. Consulta JUMPCLOUD_API_KEY_GUIDE.md para solución.`,
+                        timestamp: new Date(),
+                        persistent: true
+                    });
+                }
+            } else {
+                console.error('Failed to load JumpCloud users count:', response.status);
+            }
+        } catch (error) {
+            console.error('Error loading JumpCloud users count:', error);
+        }
+    }
+
+    // Load JumpCloud systems count
+    async loadJumpCloudSystemsCount() {
+        try {
+            console.log('Loading JumpCloud systems count...');
+            const response = await window.auth.apiRequest('/jumpcloud/systems/count');
+            
+            if (response.ok) {
+                const data = await response.json();
+                console.log('JumpCloud systems data:', data);
+                
+                // Update the assigned assets card with JumpCloud data
+                const assignedAssetsEl = document.getElementById('assignedAssets');
+                if (assignedAssetsEl) {
+                    assignedAssetsEl.textContent = data.totalSystems;
+                    console.log('Updated assignedAssets from JumpCloud to:', data.totalSystems);
+                    
+                    // Add a small indicator showing the data source
+                    const sourceIndicator = document.getElementById('assignedAssetsSource');
+                    if (sourceIndicator) {
+                        sourceIndicator.textContent = data.source;
+                        sourceIndicator.title = data.note || 'Data from JumpCloud';
+                    }
+                }
+                
+                // Show a notification about the data source
+                if (data.note && data.note.includes('Simulated')) {
+                    this.addNotification({
+                        type: 'warning',
+                        title: 'JumpCloud Systems API',
+                        message: 'Usando datos simulados para sistemas. Verifica la API key de JumpCloud para datos reales.',
+                        timestamp: new Date()
+                    });
+                }
+            } else {
+                console.error('Failed to load JumpCloud systems count:', response.status);
+            }
+        } catch (error) {
+            console.error('Error loading JumpCloud systems count:', error);
         }
     }
 }
