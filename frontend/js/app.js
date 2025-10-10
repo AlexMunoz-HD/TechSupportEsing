@@ -1307,6 +1307,11 @@ function createOnboardingOverlay() {
     document.body.appendChild(onboardingContainer);
     document.body.appendChild(closeButton);
 
+    // Initialize dropdown functionality for onboarding overlay
+    setTimeout(() => {
+        initializeDropdowns();
+    }, 200);
+
     console.log('✅ Onboarding overlay creado');
 }
 
@@ -1630,6 +1635,11 @@ function createOffboardingOverlay() {
     // Agregar al body
     document.body.appendChild(offboardingContainer);
     document.body.appendChild(closeButton);
+
+    // Initialize dropdown functionality for offboarding overlay
+    setTimeout(() => {
+        initializeDropdowns();
+    }, 200);
 
     console.log('✅ Offboarding overlay creado');
 }

@@ -9,16 +9,16 @@ const router = express.Router();
 // Login endpoint
 router.post('/login', async (req, res) => {
   try {
-    const { username, password } = req.body;
+    const { email, password } = req.body;
 
-    if (!username || !password) {
-      return res.status(400).json({ error: 'Username and password are required' });
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
     }
 
     // Get user from database
     const users = await executeQuery(
-      'SELECT id, username, email, password_hash, role, location, full_name, is_active FROM users WHERE username = ?',
-      [username]
+      'SELECT id, username, email, password_hash, role, location, full_name, is_active FROM users WHERE email = ?',
+      [email]
     );
 
     if (users.length === 0) {
@@ -41,7 +41,7 @@ router.post('/login', async (req, res) => {
     const token = jwt.sign(
       { 
         userId: user.id, 
-        username: user.username, 
+        email: user.email, 
         role: user.role 
       },
       process.env.JWT_SECRET,

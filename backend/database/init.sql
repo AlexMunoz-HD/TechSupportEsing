@@ -72,10 +72,12 @@ CREATE TABLE IF NOT EXISTS asset_assignments (
 );
 
 -- Insert default admin user (password: admin123)
+-- Note: Email is now the primary identifier for authentication
 INSERT INTO users (username, email, password_hash, role, location, full_name) VALUES
 ('admin', 'admin@techsupport.com', '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin', 'MX', 'System Administrator'),
 ('auditor1', 'auditor1@techsupport.com', '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'auditor', 'CL', 'Auditor Chile'),
-('auditor2', 'auditor2@techsupport.com', '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'auditor', 'REMOTO', 'Remote Auditor');
+('auditor2', 'auditor2@techsupport.com', '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'auditor', 'REMOTO', 'Remote Auditor'),
+('alex.munoz', 'alex.munoz@xepelin.com', '$2a$10$b2pFzl2kmh9aYnG.3.ImGuEyGDR/1Pc4M5n0gJiIBVRXCyXPAJRDu', 'admin', 'MX', 'Alex Muñoz');
 
 -- Insert sample assets
 INSERT INTO assets (asset_tag, name, category, location) VALUES

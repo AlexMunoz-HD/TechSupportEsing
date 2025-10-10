@@ -10,16 +10,15 @@ class Auth {
     isAuthenticated() {
         return this.token && this.user;
     }
-
     // Login function
-    async login(username, password) {
+    async login(email, password) {
         try {
             const response = await fetch(`${this.apiBase}/auth/login`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ username, password })
+                body: JSON.stringify({ email, password })
             });
 
             const data = await response.json();
@@ -148,16 +147,16 @@ document.addEventListener('DOMContentLoaded', function() {
         loginForm.addEventListener('submit', async function(e) {
             e.preventDefault();
             
-            const username = document.getElementById('username').value;
+            const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
 
             // Show loading state
-            loginButton.textContent = 'Iniciando sesión...';
+            loginButton.textContent = 'Logging in...';
             loginSpinner.classList.remove('hidden');
             loginError.classList.add('hidden');
 
             try {
-                await auth.login(username, password);
+                await auth.login(email, password);
                 
                 // Hide login screen and show dashboard
                 document.getElementById('loginScreen').classList.add('hidden');
@@ -172,7 +171,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 loginError.classList.remove('hidden');
                 
                 // Reset button state
-                loginButton.textContent = 'Iniciar Sesión';
+                loginButton.textContent = 'Login';
                 loginSpinner.classList.add('hidden');
             }
         });
