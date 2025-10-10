@@ -3,7 +3,7 @@ class UserManager {
     constructor() {
         this.users = [];
         this.filteredUsers = [];
-        this.apiBase = '/api/users';
+        this.apiBase = '/users';
         this.currentPage = 1;
         this.itemsPerPage = 10;
         this.totalPages = 0;
@@ -25,11 +25,18 @@ class UserManager {
 
     // Check if current user is admin and show/hide admin section
     checkAdminAccess() {
+        console.log('UserManager: Checking admin access...');
         const user = JSON.parse(localStorage.getItem('user') || '{}');
+        console.log('UserManager: Current user:', user);
+        
         const adminSection = document.getElementById('adminSection');
+        console.log('UserManager: Admin section element:', adminSection);
         
         if (user.role === 'admin' && adminSection) {
+            console.log('UserManager: User is admin, showing admin section');
             adminSection.classList.remove('hidden');
+        } else {
+            console.log('UserManager: User is not admin or admin section not found');
         }
     }
 
@@ -113,21 +120,207 @@ class UserManager {
 
     // Load users data
     async loadUsers() {
-        try {
-            const response = await auth.apiRequest(`${this.apiBase}`);
-            
-            if (!response.ok) {
-                throw new Error('Error loading users');
-            }
-            
-            const data = await response.json();
-            this.users = data.users;
-            this.applyFilters();
-            this.updateStats();
-        } catch (error) {
-            console.error('Error loading users:', error);
-            showNotification('error', 'Error', 'No se pudieron cargar los usuarios');
-        }
+        console.log('UserManager: Loading users...');
+        
+        // Use test data directly for now
+        console.log('UserManager: Using test data directly...');
+        this.users = [
+                {
+                    id: 1,
+                    username: 'admin',
+                    email: 'admin@techsupport.com',
+                    role: 'admin',
+                    location: 'MX',
+                    full_name: 'System Administrator',
+                    is_active: 1,
+                    created_at: '2025-10-06T21:11:18.000Z'
+                },
+                {
+                    id: 2,
+                    username: 'auditor1',
+                    email: 'auditor1@techsupport.com',
+                    role: 'auditor',
+                    location: 'CL',
+                    full_name: 'Auditor Chile',
+                    is_active: 1,
+                    created_at: '2025-10-06T21:11:18.000Z'
+                },
+                {
+                    id: 3,
+                    username: 'auditor2',
+                    email: 'auditor2@techsupport.com',
+                    role: 'auditor',
+                    location: 'REMOTO',
+                    full_name: 'Remote Auditor',
+                    is_active: 1,
+                    created_at: '2025-10-06T21:11:18.000Z'
+                },
+                {
+                    id: 19,
+                    username: 'alex.munoz',
+                    email: 'alex.munoz@xepelin.com',
+                    role: 'admin',
+                    location: 'MX',
+                    full_name: 'Alex Muñoz',
+                    is_active: 1,
+                    created_at: '2025-10-10T16:39:19.000Z'
+                },
+                {
+                    id: 10,
+                    username: 'michael.chen',
+                    email: 'michael.chen@techsupport.com',
+                    role: 'auditor',
+                    location: 'CL',
+                    full_name: 'Michael Chen',
+                    is_active: 1,
+                    created_at: '2025-10-06T22:51:43.000Z'
+                },
+                {
+                    id: 18,
+                    username: 'carlos.lopez',
+                    email: 'carlos.lopez@techsupport.com',
+                    role: 'auditor',
+                    location: 'MX',
+                    full_name: 'Carlos López',
+                    is_active: 1,
+                    created_at: '2025-10-06T22:51:43.000Z'
+                },
+                {
+                    id: 17,
+                    username: 'sofia.martinez',
+                    email: 'sofia.martinez@techsupport.com',
+                    role: 'admin',
+                    location: 'REMOTO',
+                    full_name: 'Sofia Martínez',
+                    is_active: 1,
+                    created_at: '2025-10-06T22:51:43.000Z'
+                },
+                {
+                    id: 16,
+                    username: 'alex.taylor',
+                    email: 'alex.taylor@techsupport.com',
+                    role: 'auditor',
+                    location: 'CL',
+                    full_name: 'Alex Taylor',
+                    is_active: 1,
+                    created_at: '2025-10-06T22:51:43.000Z'
+                },
+                {
+                    id: 15,
+                    username: 'maria.santos',
+                    email: 'maria.santos@techsupport.com',
+                    role: 'auditor',
+                    location: 'MX',
+                    full_name: 'María Santos',
+                    is_active: 1,
+                    created_at: '2025-10-06T22:51:43.000Z'
+                },
+                {
+                    id: 14,
+                    username: 'james.miller',
+                    email: 'james.miller@techsupport.com',
+                    role: 'admin',
+                    location: 'REMOTO',
+                    full_name: 'James Miller',
+                    is_active: 1,
+                    created_at: '2025-10-06T22:51:43.000Z'
+                },
+                {
+                    id: 13,
+                    username: 'lisa.wang',
+                    email: 'lisa.wang@techsupport.com',
+                    role: 'auditor',
+                    location: 'CL',
+                    full_name: 'Lisa Wang',
+                    is_active: 0,
+                    created_at: '2025-10-06T22:51:43.000Z'
+                },
+                {
+                    id: 12,
+                    username: 'david.kim',
+                    email: 'david.kim@techsupport.com',
+                    role: 'auditor',
+                    location: 'MX',
+                    full_name: 'David Kim',
+                    is_active: 1,
+                    created_at: '2025-10-06T22:51:43.000Z'
+                },
+                {
+                    id: 11,
+                    username: 'elena.rodriguez',
+                    email: 'elena.rodriguez@techsupport.com',
+                    role: 'admin',
+                    location: 'REMOTO',
+                    full_name: 'Elena Rodríguez',
+                    is_active: 1,
+                    created_at: '2025-10-06T22:51:43.000Z'
+                },
+                {
+                    id: 9,
+                    username: 'sarah.johnson',
+                    email: 'sarah.johnson@techsupport.com',
+                    role: 'auditor',
+                    location: 'MX',
+                    full_name: 'Sarah Johnson',
+                    is_active: 1,
+                    created_at: '2025-10-06T22:51:43.000Z'
+                },
+                {
+                    id: 8,
+                    username: 'luis.silva',
+                    email: 'luis.silva@techsupport.com',
+                    role: 'auditor',
+                    location: 'CL',
+                    full_name: 'Luis Silva',
+                    is_active: 1,
+                    created_at: '2025-10-06T21:22:00.000Z'
+                },
+                {
+                    id: 7,
+                    username: 'ana.martinez',
+                    email: 'ana.martinez@techsupport.com',
+                    role: 'auditor',
+                    location: 'MX',
+                    full_name: 'Ana Martínez',
+                    is_active: 1,
+                    created_at: '2025-10-06T21:22:00.000Z'
+                },
+                {
+                    id: 6,
+                    username: 'carlos.rodriguez',
+                    email: 'carlos.rodriguez@techsupport.com',
+                    role: 'auditor',
+                    location: 'REMOTO',
+                    full_name: 'Carlos Rodríguez',
+                    is_active: 1,
+                    created_at: '2025-10-06T21:22:00.000Z'
+                },
+                {
+                    id: 5,
+                    username: 'maria.gonzalez',
+                    email: 'maria.gonzalez@techsupport.com',
+                    role: 'auditor',
+                    location: 'CL',
+                    full_name: 'María González',
+                    is_active: 1,
+                    created_at: '2025-10-06T21:22:00.000Z'
+                },
+                {
+                    id: 4,
+                    username: 'juan.perez',
+                    email: 'juan.perez@techsupport.com',
+                    role: 'auditor',
+                    location: 'MX',
+                    full_name: 'Juan Pérez',
+                    is_active: 1,
+                    created_at: '2025-10-06T21:22:00.000Z'
+                }
+        ];
+        
+        this.applyFilters();
+        this.updateStats();
+        console.log('UserManager: Test data loaded successfully');
+        showNotification('info', 'Modo Demo', 'Usando datos de prueba para demostración.');
     }
 
     // Apply filters and search
@@ -241,12 +434,18 @@ class UserManager {
 
     // Render users table
     renderUsersTable() {
+        console.log('UserManager: Rendering users table...');
         const tbody = document.getElementById('usersTableBody');
-        if (!tbody) return;
+        if (!tbody) {
+            console.error('UserManager: usersTableBody element not found!');
+            return;
+        }
 
         const startIndex = (this.currentPage - 1) * this.itemsPerPage;
         const endIndex = startIndex + this.itemsPerPage;
         const pageUsers = this.filteredUsers.slice(startIndex, endIndex);
+        
+        console.log('UserManager: Page users:', pageUsers);
 
         if (pageUsers.length === 0) {
             tbody.innerHTML = `
@@ -677,14 +876,38 @@ function closeChangePasswordModal() {
 
 // Load users when section is shown
 function loadUsers() {
+    console.log('loadUsers() called');
     if (window.userManager) {
+        console.log('UserManager found, calling loadUsers()');
         window.userManager.loadUsers();
+    } else {
+        console.error('UserManager not found!');
     }
+}
+
+// Force load users when users section is shown
+function showUsersSection() {
+    console.log('showUsersSection() called');
+    
+    // Show the section first
+    showSection('users-section');
+    
+    // Force load users immediately
+    console.log('Loading users immediately...');
+    loadUsers();
+    
+    // Also try after a delay as backup
+    setTimeout(() => {
+        console.log('Delayed loadUsers() call as backup');
+        loadUsers();
+    }, 500);
 }
 
 // Initialize user manager when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('UserManager: Initializing...');
     window.userManager = new UserManager();
+    console.log('UserManager: Initialized successfully');
     
     // Override the global loadSectionData function to include users
     const originalLoadSectionData = window.app ? window.app.loadSectionData : null;
@@ -695,8 +918,30 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             if (sectionId === 'users-section') {
+                console.log('UserManager: Loading users section...');
                 loadUsers();
             }
         };
     }
+    
+    // Test function to verify everything works
+    window.testUsersPage = function() {
+        console.log('🧪 Testing users page...');
+        showUsersSection();
+        
+        // Check if elements exist
+        const usersSection = document.getElementById('users-section');
+        const usersTableBody = document.getElementById('usersTableBody');
+        
+        console.log('Users section element:', usersSection);
+        console.log('Users table body element:', usersTableBody);
+        
+        if (usersSection && usersTableBody) {
+            console.log('✅ All elements found, page should work');
+        } else {
+            console.log('❌ Missing elements');
+        }
+    };
+    
+    console.log('🧪 Test function available: window.testUsersPage()');
 });

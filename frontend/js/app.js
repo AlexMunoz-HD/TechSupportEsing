@@ -1646,9 +1646,14 @@ function createOffboardingOverlay() {
 
 // Initialize dropdown functionality
 function initializeDropdowns() {
+    console.log('🔽 Initializing dropdowns...');
+    
     // Responsibility dropdown functionality
     const responsibilityDropdownButton = document.getElementById('responsibilityDropdownButton');
     const responsibilityDropdown = document.getElementById('responsibilityDropdown');
+    
+    console.log('Responsibility dropdown button:', responsibilityDropdownButton);
+    console.log('Responsibility dropdown:', responsibilityDropdown);
     
     if (responsibilityDropdownButton && responsibilityDropdown) {
         responsibilityDropdownButton.addEventListener('click', (e) => {
@@ -1690,6 +1695,21 @@ function initializeDropdowns() {
             }
         });
     }
+    
+    // User dropdown functionality
+    const userMenuButton = document.getElementById('userMenuButton');
+    const userDropdown = document.getElementById('userDropdown');
+    
+    console.log('User menu button:', userMenuButton);
+    console.log('User dropdown:', userDropdown);
+    
+    if (userMenuButton && userDropdown) {
+        console.log('✅ User dropdown initialized');
+    } else {
+        console.log('❌ User dropdown elements not found');
+    }
+    
+    console.log('🔽 Dropdown initialization complete');
 }
 
 // Handle unhandled promise rejections

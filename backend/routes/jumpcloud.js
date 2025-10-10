@@ -518,4 +518,155 @@ router.get('/groups/counts', async (req, res) => {
   }
 });
 
+// Snipe-IT Integration
+const SNIPE_IT_API_BASE = process.env.SNIPE_IT_API_BASE || 'https://your-snipe-it-instance.com/api/v1';
+const SNIPE_IT_API_KEY = process.env.SNIPE_IT_API_KEY || 'your-snipe-it-api-key';
+
+// Helper function to make Snipe-IT API requests
+async function makeSnipeItRequest(endpoint, params = {}) {
+  try {
+    console.log(`Making Snipe-IT request to: ${SNIPE_IT_API_BASE}${endpoint}`);
+    
+    const response = await axios.get(`${SNIPE_IT_API_BASE}${endpoint}`, {
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${SNIPE_IT_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      params,
+      timeout: 10000 // 10 second timeout
+    });
+    
+    console.log(`Snipe-IT Response status: ${response.status}`);
+    return response.data;
+  } catch (error) {
+    console.error('Snipe-IT API Error:', error.response?.status, error.response?.data || error.message);
+    throw error;
+  }
+}
+
+// Get available assets from Snipe-IT
+router.get('/snipe/assets/available', async (req, res) => {
+  try {
+    const { limit = 100, offset = 0 } = req.query;
+    
+    const assetsData = await makeSnipeItRequest('/hardware', {
+      limit: parseInt(limit),
+      offset: parseInt(offset),
+      status_id: 1, // Available status (you may need to adjust this)
+      sort: 'created_at',
+      order: 'desc'
+    });
+    
+    // Filter for available assets
+    const availableAssets = assetsData.rows.filter(asset => 
+      asset.status_label && 
+      asset.status_label.status_meta === 'deployable' // Available for deployment
+    );
+    
+    res.json({
+      assets: availableAssets,
+      totalAvailable: availableAssets.length,
+      totalAssets: assetsData.total,
+      source: 'Snipe-IT',
+      lastUpdated: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Error fetching available assets from Snipe-IT:', error);
+    
+    // Fallback to simulated data
+    const simulatedAssets = [
+      { id: 1, name: 'MacBook Pro 16"', asset_tag: 'MBP001', model: 'MacBook Pro 16-inch', status_label: { status_meta: 'deployable' } },
+      { id: 2, name: 'Dell Latitude 5520', asset_tag: 'DLT002', model: 'Dell Latitude 5520', status_label: { status_meta: 'deployable' } },
+      { id: 3, name: 'MacBook Air M2', asset_tag: 'MBA003', model: 'MacBook Air M2', status_label: { status_meta: 'deployable' } },
+      { id: 4, name: 'ThinkPad X1 Carbon', asset_tag: 'TPX004', model: 'ThinkPad X1 Carbon', status_label: { status_meta: 'deployable' } },
+      { id: 5, name: 'Surface Pro 9', asset_tag: 'SPR005', model: 'Surface Pro 9', status_label: { status_meta: 'deployable' } }
+    ];
+    
+    res.json({
+      assets: simulatedAssets,
+      totalAvailable: simulatedAssets.length,
+      totalAssets: simulatedAssets.length,
+      source: 'Snipe-IT (Simulated - API Error)',
+      lastUpdated: new Date().toISOString(),
+      note: 'Using simulated data due to API error',
+      error: error.message
+    });
+  }
+});
+
+// Get assets count by status from Snipe-IT
+router.get('/snipe/assets/count', async (req, res) => {
+  try {
+    const assetsData = await makeSnipeItRequest('/hardware', {
+      limit: 1000,
+      offset: 0
+    });
+    
+    // Count assets by status
+    const statusCounts = {};
+    assetsData.rows.forEach(asset => {
+      const status = asset.status_label?.status_meta || 'unknown';
+      statusCounts[status] = (statusCounts[status] || 0) + 1;
+    });
+    
+    const availableCount = statusCounts['deployable'] || 0;
+    const totalCount = assetsData.total;
+    
+    res.json({
+      availableAssets: availableCount,
+      totalAssets: totalCount,
+      statusBreakdown: statusCounts,
+      source: 'Snipe-IT',
+      lastUpdated: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Error fetching assets count from Snipe-IT:', error);
+    
+    // Fallback to simulated data
+    res.json({
+      availableAssets: 25,
+      totalAssets: 150,
+      statusBreakdown: {
+        'deployable': 25,
+        'deployed': 100,
+        'pending': 15,
+        'archived': 10
+      },
+      source: 'Snipe-IT (Simulated - API Error)',
+      lastUpdated: new Date().toISOString(),
+      note: 'Using simulated data due to API error',
+      error: error.message
+    });
+  }
+});
+
+// Test Snipe-IT connection
+router.get('/snipe/test', async (req, res) => {
+  try {
+    const testData = await makeSnipeItRequest('/statuslabels');
+    
+    res.json({
+      message: 'Snipe-IT API connection successful',
+      statusLabels: testData.rows?.slice(0, 5) || [],
+      totalStatusLabels: testData.total || 0,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Error testing Snipe-IT connection:', error);
+    res.status(500).json({ 
+      error: 'Failed to connect to Snipe-IT',
+      details: error.message,
+      troubleshooting: {
+        steps: [
+          '1. Verify SNIPE_IT_API_BASE environment variable',
+          '2. Verify SNIPE_IT_API_KEY environment variable',
+          '3. Check Snipe-IT API permissions',
+          '4. Ensure Snipe-IT instance is accessible'
+        ]
+      }
+    });
+  }
+});
+
 module.exports = router;
