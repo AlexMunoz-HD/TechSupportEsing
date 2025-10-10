@@ -188,6 +188,9 @@ class Dashboard {
                 // Load JumpCloud systems count
                 this.loadJumpCloudSystemsCount();
                 
+                // Load JumpCloud groups for location chart
+                this.loadJumpCloudGroupsForChart();
+                
                 // Load new hires
                 if (window.employeesManager) {
                     console.log('Loading new hires...');
@@ -772,6 +775,89 @@ class Dashboard {
         } catch (error) {
             console.error('Error loading JumpCloud systems count:', error);
         }
+    }
+
+    // Load JumpCloud groups for location chart
+    async loadJumpCloudGroupsForChart() {
+        try {
+            console.log('Loading JumpCloud groups for location chart...');
+            const response = await window.auth.apiRequest('/jumpcloud/groups/counts');
+            
+            if (response.ok) {
+                const data = await response.json();
+                console.log('JumpCloud groups data:', data);
+                
+                // Update the location chart with JumpCloud data
+                this.updateLocationChartWithJumpCloudData(data.groupCounts);
+                
+                // Show notification if some groups are simulated
+                if (data.note && data.note.includes('simulated')) {
+                    this.addNotification({
+                        type: 'warning',
+                        title: 'JumpCloud Groups',
+                        message: 'Algunos grupos están simulados. Verifica los nombres de grupos en JumpCloud.',
+                        timestamp: new Date()
+                    });
+                }
+            } else {
+                console.error('Failed to load JumpCloud groups:', response.status);
+            }
+        } catch (error) {
+            console.error('Error loading JumpCloud groups:', error);
+        }
+    }
+
+    // Update location chart with JumpCloud data
+    updateLocationChartWithJumpCloudData(groupCounts) {
+        const ctx = document.getElementById('locationChart');
+        if (!ctx) return;
+
+        // Destroy existing chart
+        if (this.locationChart) {
+            this.locationChart.destroy();
+        }
+
+        // Prepare data for chart
+        const labels = groupCounts.map(group => group.name);
+        const data = groupCounts.map(group => group.count);
+        const colors = ['#3B82F6', '#10B981', '#F59E0B']; // Blue, Green, Yellow
+
+        this.locationChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: data,
+                    backgroundColor: colors,
+                    borderWidth: 2,
+                    borderColor: '#ffffff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 20,
+                            usePointStyle: true
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.parsed;
+                                return `${label}: ${value} dispositivos`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        console.log('Location chart updated with JumpCloud data:', groupCounts);
     }
 }
 
