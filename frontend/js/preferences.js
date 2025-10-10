@@ -348,9 +348,6 @@ class PreferencesManager {
             case 'dashboard_page':
                 if (window.showSection) window.showSection('dashboard-section');
                 break;
-            case 'onboarding_page':
-                if (window.showSection) window.showSection('onboarding-section');
-                break;
             case 'offboarding_page':
                 if (window.showSection) window.showSection('offboarding-section');
                 break;

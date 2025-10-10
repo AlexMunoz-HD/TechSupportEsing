@@ -789,7 +789,7 @@ function showSection(sectionId) {
     }
     
     // Update responsibility dropdown button if any of its sections is active
-    if (responsibilityDropdownButton && ['responsibility-section', 'onboarding-section', 'offboarding-section'].includes(sectionId)) {
+    if (responsibilityDropdownButton && ['responsibility-section', 'offboarding-section'].includes(sectionId)) {
         responsibilityDropdownButton.classList.remove('text-gray-500');
         responsibilityDropdownButton.classList.add('text-primary-600', 'border-primary-500');
         
@@ -813,8 +813,6 @@ function showSection(sectionId) {
         loadAuditLogs();
     } else if (sectionId === 'responsibility-section') {
         loadEmployees();
-    } else if (sectionId === 'onboarding-section') {
-        loadOnboarding();
     } else if (sectionId === 'offboarding-section') {
         loadOffboarding();
     }

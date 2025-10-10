@@ -560,29 +560,23 @@
                             <div class="relative">
                                 <button id="responsibilityDropdownButton" class="nav-link text-gray-600 hover:text-gray-900 hover:bg-gray-50 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center group">
                                     <i class="fas fa-file-contract mr-2 text-sm"></i>
-                                    Gestión de Personal
+                                    Cartas de Responsabilidad
                                     <i class="fas fa-chevron-down ml-2 text-xs transition-transform duration-200 group-hover:rotate-180"></i>
                                 </button>
                                 <div id="responsibilityDropdown" class="hidden absolute top-full left-0 mt-2 w-56 bg-white rounded-xl shadow-xl z-50 border border-gray-200 overflow-hidden">
                                     <div class="py-2">
                                         <div class="px-4 py-3 border-b border-gray-200">
-                                            <p class="text-sm font-medium text-gray-900">Gestión de Personal</p>
+                                            <p class="text-sm font-medium text-gray-900">Cartas de Responsabilidad</p>
                                             <p class="text-xs text-gray-500">Procesos de empleados</p>
                                         </div>
-                                        <a href="#" onclick="showSection('responsibility-section'); loadResponsibilityLetters();" class="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200 flex items-center">
-                                            <i class="fas fa-file-alt mr-3 text-gray-400"></i>
-                                            Cartas de Responsabilidad
-                                        </a>
-                                        
-                                        <a href="#" onclick="showSection('onboarding-section')" class="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200 flex items-center">
+                                        <a href="#" onclick="createOnboardingOverlay()" class="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200 flex items-center">
                                             <i class="fas fa-user-plus mr-3 text-gray-400"></i>
                                             Onboarding
                                         </a>
-                                        <a href="#" onclick="showSection('offboarding-section')" class="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200 flex items-center">
+                                        <a href="#" onclick="createOffboardingOverlay()" class="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200 flex items-center">
                                             <i class="fas fa-user-minus mr-3 text-gray-400"></i>
                                             Offboarding
                                         </a>
-                                        
                                     </div>
                                 </div>
                             </div>
@@ -696,23 +690,17 @@
                 </a>
                 <div class="border-t border-gray-200 pt-2">
                     <div class="px-3 py-2 bg-gray-50 rounded-lg mb-2">
-                        <p class="text-sm font-medium text-gray-900">Gestión de Personal</p>
+                        <p class="text-sm font-medium text-gray-900">Cartas de Responsabilidad</p>
                         <p class="text-xs text-gray-500">Procesos de empleados</p>
                     </div>
-                    <a href="#" onclick="showSection('responsibility-section'); loadResponsibilityLetters();" class="block px-3 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg text-sm font-medium flex items-center">
-                        <i class="fas fa-file-alt mr-3 text-gray-400"></i>
-                        Cartas de Responsabilidad
-                    </a>
-                    
-                    <a href="#" onclick="showSection('onboarding-section')" class="block px-3 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg text-sm font-medium flex items-center">
+                    <a href="#" onclick="createOnboardingOverlay()" class="block px-3 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg text-sm font-medium flex items-center">
                         <i class="fas fa-user-plus mr-3 text-gray-400"></i>
                         Onboarding
                     </a>
-                    <a href="#" onclick="showSection('offboarding-section')" class="block px-3 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg text-sm font-medium flex items-center">
+                    <a href="#" onclick="createOffboardingOverlay()" class="block px-3 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg text-sm font-medium flex items-center">
                         <i class="fas fa-user-minus mr-3 text-gray-400"></i>
                         Offboarding
                     </a>
-                    
                 </div>
             </div>
         </div>
@@ -1187,239 +1175,6 @@
                             <p><strong>Webhook eSign:</strong> https://mi.backend.seguro/api/disparar-esign</p>
                             <p><strong>Credenciales:</strong> Gestionadas exclusivamente en el backend proxy</p>
                             <p><strong>Frontend:</strong> Sin tokens, claves o credenciales de API</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Audit Section -->
-            <div id="audit-section" class="section hidden">
-                <div class="bg-white rounded-lg shadow card-shadow">
-                    <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-                        <h3 class="text-lg font-medium text-gray-900">Log de Auditoría</h3>
-                        <button onclick="exportAuditLogs()" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition duration-200">
-                            <i class="fas fa-download mr-2"></i>Exportar
-                        </button>
-                    </div>
-                    <div class="p-6">
-                        <!-- Filters -->
-                        <div class="mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
-                            <select id="auditActionFilter" class="border border-gray-300 rounded-md px-3 py-2 text-sm">
-                                <option value="">Todas las acciones</option>
-                                <option value="LOGIN">Login</option>
-                                <option value="ASSET_ASSIGNED">Asset Asignado</option>
-                                <option value="ASSET_RETURNED">Asset Devuelto</option>
-                                <option value="USER_CREATED">Usuario Creado</option>
-                            </select>
-                            <select id="auditLocationFilter" class="border border-gray-300 rounded-md px-3 py-2 text-sm">
-                                <option value="">Todas las ubicaciones</option>
-                                <option value="MX">México</option>
-                                <option value="CL">Chile</option>
-                                <option value="REMOTO">Remoto</option>
-                            </select>
-                            <input type="date" id="auditStartDate" class="border border-gray-300 rounded-md px-3 py-2 text-sm">
-                            <input type="date" id="auditEndDate" class="border border-gray-300 rounded-md px-3 py-2 text-sm">
-                        </div>
-                        <!-- Audit Table -->
-                        <div class="overflow-x-auto">
-                            <table class="min-w-full divide-y divide-gray-200">
-                                <thead class="bg-gray-50">
-                                    <tr>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acción</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Usuario</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Recurso</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ubicación</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Detalles</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="auditTableBody" class="bg-white divide-y divide-gray-200">
-                                    <!-- Audit logs will be populated here -->
-                                </tbody>
-                            </table>
-                        </div>
-                        <!-- Pagination -->
-                        <div id="auditPagination" class="mt-6 flex justify-between items-center">
-                            <!-- Pagination will be populated here -->
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Onboarding Section -->
-            <div id="onboarding-section" class="section hidden">
-                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                    <!-- Header -->
-                    <div class="mb-8">
-                        <h1 class="text-3xl font-bold text-gray-900">Procesos de Onboarding</h1>
-                        <p class="mt-2 text-gray-600">Gestiona el proceso de incorporación de nuevos empleados</p>
-                    </div>
-
-                    <!-- Stats Cards -->
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                        <div class="bg-white rounded-lg shadow-sm p-6">
-                            <div class="flex items-center">
-                                <div class="flex-shrink-0">
-                                    <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                                        <i class="fas fa-user-plus text-blue-600"></i>
-                                    </div>
-                                </div>
-                                <div class="ml-4">
-                                    <p class="text-sm font-medium text-gray-500">Total Procesos</p>
-                                    <p class="text-2xl font-semibold text-gray-900" id="totalOnboarding">-</p>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="bg-white rounded-lg shadow-sm p-6">
-                            <div class="flex items-center">
-                                <div class="flex-shrink-0">
-                                    <div class="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
-                                        <i class="fas fa-clock text-yellow-600"></i>
-                                    </div>
-                                </div>
-                                <div class="ml-4">
-                                    <p class="text-sm font-medium text-gray-500">En Progreso</p>
-                                    <p class="text-2xl font-semibold text-gray-900" id="inProgressOnboarding">-</p>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="bg-white rounded-lg shadow-sm p-6">
-                            <div class="flex items-center">
-                                <div class="flex-shrink-0">
-                                    <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-                                        <i class="fas fa-check-circle text-green-600"></i>
-                                    </div>
-                                </div>
-                                <div class="ml-4">
-                                    <p class="text-sm font-medium text-gray-500">Completados</p>
-                                    <p class="text-2xl font-semibold text-gray-900" id="completedOnboarding">-</p>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="bg-white rounded-lg shadow-sm p-6">
-                            <div class="flex items-center">
-                                <div class="flex-shrink-0">
-                                    <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
-                                        <i class="fas fa-calendar text-purple-600"></i>
-                                    </div>
-                                </div>
-                                <div class="ml-4">
-                                    <p class="text-sm font-medium text-gray-500">Esta Semana</p>
-                                    <p class="text-2xl font-semibold text-gray-900" id="thisWeekOnboarding">-</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Search and Filters -->
-                    <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
-                        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0 lg:space-x-4">
-                            <!-- Search -->
-                            <div class="flex-1">
-                                <div class="relative">
-                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <i class="fas fa-search text-gray-400"></i>
-                                    </div>
-                                    <input type="text" id="onboardingSearch" placeholder="Buscar por empleado, posición o departamento..." 
-                                           class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
-                                </div>
-                            </div>
-                            
-                            <!-- Filters -->
-                            <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4">
-                                <select id="statusOnboardingFilter" class="block w-full sm:w-auto px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
-                                    <option value="">Todos los estados</option>
-                                    <option value="pending">Pendiente</option>
-                                    <option value="in_progress">En Progreso</option>
-                                    <option value="completed">Completado</option>
-                                    <option value="cancelled">Cancelado</option>
-                                </select>
-                                
-                                <select id="locationOnboardingFilter" class="block w-full sm:w-auto px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
-                                    <option value="">Todas las ubicaciones</option>
-                                    <option value="MX">México</option>
-                                    <option value="CL">Chile</option>
-                                    <option value="REMOTO">Remoto</option>
-                                </select>
-                                
-                                <select id="departmentOnboardingFilter" class="block w-full sm:w-auto px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
-                                    <option value="">Todos los departamentos</option>
-                                    <option value="IT">IT</option>
-                                    <option value="HR">Recursos Humanos</option>
-                                    <option value="Finance">Finanzas</option>
-                                    <option value="Operations">Operaciones</option>
-                                    <option value="Sales">Ventas</option>
-                                </select>
-                                
-                                <button onclick="onboardingManager.clearFilters()" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
-                                    <i class="fas fa-times mr-1"></i>
-                                    Limpiar
-                        </button>
-                            </div>
-                    </div>
-                </div>
-
-                    <!-- Onboarding Table -->
-                    <div class="bg-white shadow-sm rounded-lg overflow-hidden">
-                        <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-                            <div>
-                                <h2 class="text-lg font-semibold text-gray-900">Procesos de Onboarding</h2>
-                                <p class="text-sm text-gray-500 mt-1" id="onboardingCount">Mostrando 0 procesos</p>
-                    </div>
-                            <button onclick="openCreateOnboardingModal()" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200">
-                                <i class="fas fa-plus mr-2"></i>
-                                Nuevo Proceso
-                            </button>
-                        </div>
-                        
-                        <div class="overflow-x-auto">
-                            <table class="min-w-full divide-y divide-gray-200">
-                                <thead class="bg-gray-50">
-                                    <tr>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onclick="onboardingManager.sortBy('employee_name')">
-                                            Empleado <i class="fas fa-sort ml-1"></i>
-                                        </th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onclick="onboardingManager.sortBy('position')">
-                                            Posición <i class="fas fa-sort ml-1"></i>
-                                        </th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onclick="onboardingManager.sortBy('department')">
-                                            Departamento <i class="fas fa-sort ml-1"></i>
-                                        </th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onclick="onboardingManager.sortBy('status')">
-                                            Estado <i class="fas fa-sort ml-1"></i>
-                                        </th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onclick="onboardingManager.sortBy('start_date')">
-                                            Fecha Inicio <i class="fas fa-sort ml-1"></i>
-                                        </th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Progreso</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="onboardingTableBody" class="bg-white divide-y divide-gray-200">
-                                    <!-- Onboarding processes will be populated here -->
-                                </tbody>
-                            </table>
-                        </div>
-                        
-                        <!-- Pagination -->
-                        <div id="onboardingPagination" class="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
-                            <div class="flex items-center text-sm text-gray-700">
-                                <span id="onboardingPaginationInfo">Mostrando 0 de 0 procesos</span>
-                        </div>
-                            <div class="flex items-center space-x-2">
-                                <button id="onboardingPrevPage" onclick="onboardingManager.previousPage()" disabled class="px-3 py-1 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
-                                    <i class="fas fa-chevron-left"></i>
-                                </button>
-                                <div id="onboardingPageNumbers" class="flex space-x-1">
-                                    <!-- Page numbers will be populated here -->
-                                </div>
-                                <button id="onboardingNextPage" onclick="onboardingManager.nextPage()" disabled class="px-3 py-1 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
-                                    <i class="fas fa-chevron-right"></i>
-                                </button>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -2222,10 +1977,6 @@
                                 <input type="checkbox" name="audit" class="notification-toggle rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
                                 <span class="ml-2 text-sm text-gray-700">Notificaciones de auditoría</span>
                             </label>
-                            <label class="flex items-center">
-                                <input type="checkbox" name="responsibility" class="notification-toggle rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
-                                <span class="ml-2 text-sm text-gray-700">Notificaciones de cartas</span>
-                            </label>
                         </div>
                     </div>
 
@@ -2430,6 +2181,62 @@
         </div>
     </div>
 
+    <!-- Audit Section -->
+    <div id="audit-section" class="section hidden">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="bg-white rounded-lg shadow card-shadow">
+                <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                    <h3 class="text-lg font-medium text-gray-900">Log de Auditoría</h3>
+                    <button onclick="exportAuditLogs()" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition duration-200">
+                        <i class="fas fa-download mr-2"></i>Exportar
+                    </button>
+                </div>
+                <div class="p-6">
+                    <!-- Filters -->
+                    <div class="mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <select id="auditActionFilter" class="border border-gray-300 rounded-md px-3 py-2 text-sm">
+                            <option value="">Todas las acciones</option>
+                            <option value="LOGIN">Login</option>
+                            <option value="ASSET_ASSIGNED">Asset Asignado</option>
+                            <option value="ASSET_RETURNED">Asset Devuelto</option>
+                            <option value="USER_CREATED">Usuario Creado</option>
+                        </select>
+                        <select id="auditLocationFilter" class="border border-gray-300 rounded-md px-3 py-2 text-sm">
+                            <option value="">Todas las ubicaciones</option>
+                            <option value="MX">México</option>
+                            <option value="CL">Chile</option>
+                            <option value="REMOTO">Remoto</option>
+                        </select>
+                        <input type="date" id="auditStartDate" class="border border-gray-300 rounded-md px-3 py-2 text-sm">
+                        <input type="date" id="auditEndDate" class="border border-gray-300 rounded-md px-3 py-2 text-sm">
+                    </div>
+                    <!-- Audit Table -->
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acción</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Usuario</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Recurso</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ubicación</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Detalles</th>
+                                </tr>
+                            </thead>
+                            <tbody id="auditTableBody" class="bg-white divide-y divide-gray-200">
+                                <!-- Audit logs will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <!-- Pagination -->
+                    <div id="auditPagination" class="mt-6 flex justify-between items-center">
+                        <!-- Pagination will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Scripts -->
     <script src="js/auth.js?v=2"></script>
     <script src="js/dashboard.js?v=2"></script>
@@ -2453,7 +2260,6 @@
     <script src="js/colors.js?v=4"></script>
     <script src="js/cards.js?v=4"></script>
     <script src="js/progress-rings.js?v=4"></script>
-    <script src="js/responsibility.js?v=2"></script>
     <script src="js/onboarding.js?v=2"></script>
     <script src="js/offboarding.js?v=2"></script>
     <script src="js/preferences.js?v=2"></script>
