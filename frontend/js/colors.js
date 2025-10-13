@@ -344,11 +344,6 @@ class ColorManager {
 
         // Store preference
         localStorage.setItem('colorScheme', schemeName);
-
-        // Show notification
-        if (window.showToast) {
-            window.showToast('info', 'Esquema de colores', `Esquema ${schemeName} aplicado`);
-        }
     }
 
     setupContextualColors() {

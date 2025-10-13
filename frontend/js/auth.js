@@ -322,6 +322,7 @@ function updateUserInfo() {
         const userFullName = document.getElementById('userFullName');
         const userEmail = document.getElementById('userEmail');
         const adminSection = document.getElementById('adminSection');
+        const dashboardTitle = document.getElementById('dashboardTitle');
         
         if (userName) {
             userName.textContent = auth.user.full_name;
@@ -342,6 +343,11 @@ function updateUserInfo() {
 
         if (userEmail) {
             userEmail.textContent = auth.user.email;
+        }
+
+        // Update dashboard title with user name
+        if (dashboardTitle) {
+            dashboardTitle.textContent = `¡Hola, ${auth.user.full_name}!`;
         }
 
         // Show/hide admin section based on user role

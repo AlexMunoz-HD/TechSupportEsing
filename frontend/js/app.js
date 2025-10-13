@@ -90,9 +90,15 @@ class TechSupportApp {
 
     // Focus search input
     focusSearch() {
-        const searchInput = document.getElementById('assetSearch');
-        if (searchInput && !searchInput.closest('.hidden')) {
-            searchInput.focus();
+        // Try to focus the global search first
+        if (window.searchManager) {
+            window.searchManager.focus();
+        } else {
+            // Fallback to asset search
+            const searchInput = document.getElementById('assetSearch');
+            if (searchInput && !searchInput.closest('.hidden')) {
+                searchInput.focus();
+            }
         }
     }
 
@@ -194,7 +200,21 @@ class TechSupportApp {
             
             // Fix section position if it's inside dashboard-container
             console.log('🔍 Checking section:', sectionId);
-            if (sectionId === 'audit-section') {
+            if (sectionId === 'dashboard-section') {
+                console.log('🔧 Initializing dashboard');
+                // Initialize dashboard when showing dashboard section
+                setTimeout(() => {
+                    if (typeof initializeDashboard === 'function') {
+                        initializeDashboard();
+                    } else if (window.dashboardManager) {
+                        window.dashboardManager.loadDashboardData();
+                    } else {
+                        // Fallback: load demo data if dashboard manager is not available
+                        console.log('📊 Dashboard manager not available, loading demo data...');
+                        loadDashboardDemoData();
+                    }
+                }, 100);
+            } else if (sectionId === 'audit-section') {
                 console.log('🔧 Calling fixAuditSectionPosition');
                 this.fixAuditSectionPosition(targetSection);
             } else if (sectionId === 'onboarding-section') {
@@ -203,11 +223,19 @@ class TechSupportApp {
             } else if (sectionId === 'offboarding-section') {
                 console.log('🔧 Calling fixOffboardingSectionPosition');
                 this.fixOffboardingSectionPosition(targetSection);
+            } else if (sectionId === 'profile-section') {
+                console.log('🔧 Creating profile overlay');
+                createProfileOverlay();
             }
         }
         
         // Update navigation
         this.updateNavigation(sectionId);
+        
+        // Reinitialize dropdowns after section change
+        setTimeout(() => {
+            initializeDropdowns();
+        }, 100);
         
         // Load section-specific data
         this.loadSectionData(sectionId);
@@ -473,7 +501,7 @@ class TechSupportApp {
             position: fixed !important;
             top: 64px !important;
             left: 0 !important;
-            z-index: 1000 !important;
+            z-index: 10 !important;
             background: white !important;
             padding: 20px !important;
             overflow-y: auto !important;
@@ -600,190 +628,261 @@ class TechSupportApp {
                 display: block !important;
                 visibility: visible !important;
                 opacity: 1 !important;
-                height: auto !important;
-                min-height: calc(100vh - 64px) !important;
+                height: calc(100vh - 64px) !important;
                 width: 100% !important;
                 position: fixed !important;
                 top: 64px !important;
                 left: 0 !important;
-                z-index: 1000 !important;
+                z-index: 10 !important;
                 background: white !important;
                 padding: 20px !important;
                 overflow-y: auto !important;
+                overflow-x: hidden !important;
             `;
             
             // Create the onboarding content
             onboardingContainer.innerHTML = `
                 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                    <!-- Header -->
-                    <div class="mb-8">
-                        <h1 class="text-3xl font-bold text-gray-900">Procesos de Onboarding</h1>
-                        <p class="mt-2 text-gray-600">Gestiona el proceso de incorporación de nuevos empleados</p>
-                    </div>
-
-                    <!-- Stats Cards -->
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                        <div class="bg-white rounded-lg shadow-sm p-6">
-                            <div class="flex items-center">
-                                <div class="flex-shrink-0">
-                                    <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                                        <i class="fas fa-clock text-blue-600"></i>
+                    <!-- Header with Gradient -->
+                    <div class="mb-8 relative">
+                        <div class="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-8 text-white shadow-xl">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <h1 class="text-4xl font-bold mb-2">🚀 Procesos de Onboarding</h1>
+                                    <p class="text-blue-100 text-lg">Gestiona el proceso de incorporación de nuevos empleados</p>
+                                </div>
+                                <div class="hidden md:block">
+                                    <div class="w-20 h-20 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                                        <i class="fas fa-user-plus text-3xl text-white"></i>
                                     </div>
-                                </div>
-                                <div class="ml-4">
-                                    <p class="text-sm font-medium text-gray-500">Pendientes</p>
-                                    <p class="text-2xl font-semibold text-gray-900" id="pendingOnboarding">12</p>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="bg-white rounded-lg shadow-sm p-6">
-                            <div class="flex items-center">
-                                <div class="flex-shrink-0">
-                                    <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-                                        <i class="fas fa-paper-plane text-green-600"></i>
-                                    </div>
-                                </div>
-                                <div class="ml-4">
-                                    <p class="text-sm font-medium text-gray-500">Enviadas</p>
-                                    <p class="text-2xl font-semibold text-gray-900" id="sentOnboarding">8</p>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="bg-white rounded-lg shadow-sm p-6">
-                            <div class="flex items-center">
-                                <div class="flex-shrink-0">
-                                    <div class="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
-                                        <i class="fas fa-exclamation-triangle text-yellow-600"></i>
-                                    </div>
-                                </div>
-                                <div class="ml-4">
-                                    <p class="text-sm font-medium text-gray-500">No Firmadas</p>
-                                    <p class="text-2xl font-semibold text-gray-900" id="unsignedOnboarding">5</p>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="bg-white rounded-lg shadow-sm p-6">
-                            <div class="flex items-center">
-                                <div class="flex-shrink-0">
-                                    <div class="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
-                                        <i class="fas fa-exclamation-circle text-red-600"></i>
-                                    </div>
-                                </div>
-                                <div class="ml-4">
-                                    <p class="text-sm font-medium text-gray-500">Atrasadas</p>
-                                    <p class="text-2xl font-semibold text-gray-900" id="overdueOnboarding">3</p>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Actions Bar -->
-                    <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
-                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                            <div class="flex items-center space-x-4">
-                                <button onclick="createNewOnboarding()" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition duration-200 flex items-center">
+                    <!-- Enhanced Stats Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                        <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-blue-200">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm font-medium text-blue-600 mb-1">Pendientes</p>
+                                    <p class="text-3xl font-bold text-blue-800" id="pendingOnboarding">12</p>
+                                    <p class="text-xs text-blue-500 mt-1">Esperando inicio</p>
+                                </div>
+                                <div class="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center shadow-lg">
+                                    <i class="fas fa-clock text-white text-lg"></i>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-green-200">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm font-medium text-green-600 mb-1">Enviadas</p>
+                                    <p class="text-3xl font-bold text-green-800" id="sentOnboarding">8</p>
+                                    <p class="text-xs text-green-500 mt-1">En proceso</p>
+                                </div>
+                                <div class="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center shadow-lg">
+                                    <i class="fas fa-paper-plane text-white text-lg"></i>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-yellow-200">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm font-medium text-yellow-600 mb-1">No Firmadas</p>
+                                    <p class="text-3xl font-bold text-yellow-800" id="unsignedOnboarding">5</p>
+                                    <p class="text-xs text-yellow-500 mt-1">Requieren atención</p>
+                                </div>
+                                <div class="w-12 h-12 bg-yellow-500 rounded-xl flex items-center justify-center shadow-lg">
+                                    <i class="fas fa-exclamation-triangle text-white text-lg"></i>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-gradient-to-br from-red-50 to-red-100 rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-red-200">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm font-medium text-red-600 mb-1">Atrasadas</p>
+                                    <p class="text-3xl font-bold text-red-800" id="overdueOnboarding">3</p>
+                                    <p class="text-xs text-red-500 mt-1">Urgente</p>
+                                </div>
+                                <div class="w-12 h-12 bg-red-500 rounded-xl flex items-center justify-center shadow-lg">
+                                    <i class="fas fa-exclamation-circle text-white text-lg"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Enhanced Actions Bar -->
+                    <div class="bg-white rounded-2xl shadow-lg p-6 mb-6 border border-gray-100">
+                        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                            <div class="flex flex-wrap items-center gap-3">
+                                <button onclick="createNewOnboarding()" class="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 flex items-center shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
                                     <i class="fas fa-plus mr-2"></i>
                                     Nuevo Onboarding
                                 </button>
-                                <button onclick="exportOnboarding()" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition duration-200 flex items-center">
+                                <button onclick="exportOnboarding()" class="bg-gradient-to-r from-green-600 to-green-700 text-white px-6 py-3 rounded-xl hover:from-green-700 hover:to-green-800 transition-all duration-200 flex items-center shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
                                     <i class="fas fa-download mr-2"></i>
                                     Exportar
                                 </button>
+                                <button onclick="bulkActions()" class="bg-gradient-to-r from-purple-600 to-purple-700 text-white px-6 py-3 rounded-xl hover:from-purple-700 hover:to-purple-800 transition-all duration-200 flex items-center shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
+                                    <i class="fas fa-tasks mr-2"></i>
+                                    Acciones Masivas
+                                </button>
                             </div>
-                            <div class="mt-4 sm:mt-0">
-                                <div class="flex items-center space-x-2">
-                                    <input type="text" id="onboardingSearch" placeholder="Buscar empleado..." class="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
-                                    <select id="onboardingFilter" class="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
-                                        <option value="">Todos los estados</option>
-                                        <option value="pending">Pendientes</option>
-                                        <option value="sent">Enviadas</option>
-                                        <option value="unsigned">No Firmadas</option>
-                                        <option value="overdue">Atrasadas</option>
-                                    </select>
+                            <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                                <div class="relative">
+                                    <input type="text" id="onboardingSearch" placeholder="Buscar empleado..." class="w-full sm:w-64 pl-10 pr-4 py-3 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm">
+                                    <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
                                 </div>
+                                <select id="onboardingFilter" class="px-4 py-3 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm">
+                                    <option value="">Todos los estados</option>
+                                    <option value="pending">Pendientes</option>
+                                    <option value="sent">Enviadas</option>
+                                    <option value="unsigned">No Firmadas</option>
+                                    <option value="overdue">Atrasadas</option>
+                                </select>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Onboarding Table -->
-                    <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+                    <!-- Enhanced Onboarding Table -->
+                    <div class="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100">
+                        <div class="px-6 py-4 bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
+                            <h3 class="text-lg font-semibold text-gray-800 flex items-center">
+                                <i class="fas fa-table mr-2 text-blue-600"></i>
+                                Lista de Procesos de Onboarding
+                            </h3>
+                        </div>
                         <div class="overflow-x-auto">
                             <table class="min-w-full divide-y divide-gray-200">
                                 <thead class="bg-gray-50">
                                     <tr>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Empleado</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha Inicio</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Progreso</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                            <div class="flex items-center">
+                                                <i class="fas fa-user mr-2 text-gray-400"></i>
+                                                Empleado
+                                            </div>
+                                        </th>
+                                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                            <div class="flex items-center">
+                                                <i class="fas fa-calendar mr-2 text-gray-400"></i>
+                                                Fecha Inicio
+                                            </div>
+                                        </th>
+                                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                            <div class="flex items-center">
+                                                <i class="fas fa-flag mr-2 text-gray-400"></i>
+                                                Estado
+                                            </div>
+                                        </th>
+                                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                            <div class="flex items-center">
+                                                <i class="fas fa-chart-line mr-2 text-gray-400"></i>
+                                                Progreso
+                                            </div>
+                                        </th>
+                                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                            <div class="flex items-center">
+                                                <i class="fas fa-cogs mr-2 text-gray-400"></i>
+                                                Acciones
+                                            </div>
+                                        </th>
                                     </tr>
                                 </thead>
                                 <tbody id="onboardingTableBody" class="bg-white divide-y divide-gray-200">
-                                    <!-- Sample data -->
-                                    <tr class="hover:bg-gray-50">
+                                    <!-- Sample data with enhanced styling -->
+                                    <tr class="hover:bg-blue-50 transition-colors duration-200">
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             <div class="flex items-center">
-                                                <div class="flex-shrink-0 h-10 w-10">
-                                                    <div class="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
-                                                        <span class="text-sm font-medium text-blue-600">JD</span>
+                                                <div class="flex-shrink-0 h-12 w-12">
+                                                    <div class="h-12 w-12 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center shadow-lg">
+                                                        <span class="text-sm font-bold text-white">JD</span>
                                                     </div>
                                                 </div>
                                                 <div class="ml-4">
-                                                    <div class="text-sm font-medium text-gray-900">Juan Díaz</div>
+                                                    <div class="text-sm font-semibold text-gray-900">Juan Díaz</div>
                                                     <div class="text-sm text-gray-500">juan.diaz@empresa.com</div>
+                                                    <div class="text-xs text-blue-600 font-medium">Desarrollador Senior</div>
                                                 </div>
                                             </div>
                                         </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">15/01/2025</td>
                                         <td class="px-6 py-4 whitespace-nowrap">
-                                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">Pendiente</span>
+                                            <div class="text-sm font-medium text-gray-900">15/01/2025</div>
+                                            <div class="text-xs text-gray-500">Hace 3 días</div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span class="inline-flex px-3 py-1 text-xs font-semibold rounded-full bg-gradient-to-r from-yellow-100 to-yellow-200 text-yellow-800 border border-yellow-300">
+                                                <i class="fas fa-clock mr-1"></i>
+                                                Pendiente
+                                            </span>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             <div class="flex items-center">
-                                                <div class="w-full bg-gray-200 rounded-full h-2">
-                                                    <div class="bg-blue-600 h-2 rounded-full" style="width: 60%"></div>
+                                                <div class="w-full bg-gray-200 rounded-full h-3 mr-3">
+                                                    <div class="bg-gradient-to-r from-blue-500 to-blue-600 h-3 rounded-full shadow-sm" style="width: 60%"></div>
                                                 </div>
-                                                <span class="ml-2 text-sm text-gray-600">60%</span>
+                                                <span class="text-sm font-semibold text-gray-700">60%</span>
                                             </div>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                            <button onclick="viewOnboarding(1)" class="text-blue-600 hover:text-blue-900 mr-3">Ver</button>
-                                            <button onclick="editOnboarding(1)" class="text-green-600 hover:text-green-900 mr-3">Editar</button>
-                                            <button onclick="sendReminder(1)" class="text-yellow-600 hover:text-yellow-900">Recordar</button>
+                                            <div class="flex items-center space-x-2">
+                                                <button onclick="viewOnboarding(1)" class="bg-blue-100 text-blue-700 px-3 py-1 rounded-lg hover:bg-blue-200 transition-colors duration-200 text-xs font-medium">
+                                                    <i class="fas fa-eye mr-1"></i>Ver
+                                                </button>
+                                                <button onclick="editOnboarding(1)" class="bg-green-100 text-green-700 px-3 py-1 rounded-lg hover:bg-green-200 transition-colors duration-200 text-xs font-medium">
+                                                    <i class="fas fa-edit mr-1"></i>Editar
+                                                </button>
+                                                <button onclick="sendReminder(1)" class="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-lg hover:bg-yellow-200 transition-colors duration-200 text-xs font-medium">
+                                                    <i class="fas fa-bell mr-1"></i>Recordar
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
-                                    <tr class="hover:bg-gray-50">
+                                    <tr class="hover:bg-green-50 transition-colors duration-200">
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             <div class="flex items-center">
-                                                <div class="flex-shrink-0 h-10 w-10">
-                                                    <div class="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
-                                                        <span class="text-sm font-medium text-green-600">MR</span>
+                                                <div class="flex-shrink-0 h-12 w-12">
+                                                    <div class="h-12 w-12 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center shadow-lg">
+                                                        <span class="text-sm font-bold text-white">MR</span>
                                                     </div>
                                                 </div>
                                                 <div class="ml-4">
-                                                    <div class="text-sm font-medium text-gray-900">María Rodríguez</div>
+                                                    <div class="text-sm font-semibold text-gray-900">María Rodríguez</div>
                                                     <div class="text-sm text-gray-500">maria.rodriguez@empresa.com</div>
+                                                    <div class="text-xs text-green-600 font-medium">Diseñadora UX</div>
                                                 </div>
                                             </div>
                                         </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">10/01/2025</td>
                                         <td class="px-6 py-4 whitespace-nowrap">
-                                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Completado</span>
+                                            <div class="text-sm font-medium text-gray-900">10/01/2025</div>
+                                            <div class="text-xs text-gray-500">Hace 8 días</div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span class="inline-flex px-3 py-1 text-xs font-semibold rounded-full bg-gradient-to-r from-green-100 to-green-200 text-green-800 border border-green-300">
+                                                <i class="fas fa-check-circle mr-1"></i>
+                                                Completado
+                                            </span>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             <div class="flex items-center">
-                                                <div class="w-full bg-gray-200 rounded-full h-2">
-                                                    <div class="bg-green-600 h-2 rounded-full" style="width: 100%"></div>
+                                                <div class="w-full bg-gray-200 rounded-full h-3 mr-3">
+                                                    <div class="bg-gradient-to-r from-green-500 to-green-600 h-3 rounded-full shadow-sm" style="width: 100%"></div>
                                                 </div>
-                                                <span class="ml-2 text-sm text-gray-600">100%</span>
+                                                <span class="text-sm font-semibold text-gray-700">100%</span>
                                             </div>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                            <button onclick="viewOnboarding(2)" class="text-blue-600 hover:text-blue-900 mr-3">Ver</button>
-                                            <button onclick="downloadCertificate(2)" class="text-green-600 hover:text-green-900">Certificado</button>
+                                            <div class="flex items-center space-x-2">
+                                                <button onclick="viewOnboarding(2)" class="bg-blue-100 text-blue-700 px-3 py-1 rounded-lg hover:bg-blue-200 transition-colors duration-200 text-xs font-medium">
+                                                    <i class="fas fa-eye mr-1"></i>Ver
+                                                </button>
+                                                <button onclick="downloadCertificate(2)" class="bg-green-100 text-green-700 px-3 py-1 rounded-lg hover:bg-green-200 transition-colors duration-200 text-xs font-medium">
+                                                    <i class="fas fa-certificate mr-1"></i>Certificado
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 </tbody>
@@ -1078,189 +1177,260 @@ function createOnboardingOverlay() {
         display: block !important;
         visibility: visible !important;
         opacity: 1 !important;
-        height: auto !important;
-        min-height: calc(100vh - 64px) !important;
+        height: calc(100vh - 64px) !important;
         width: 100% !important;
         position: fixed !important;
         top: 64px !important;
         left: 0 !important;
-        z-index: 1000 !important;
+        z-index: 10 !important;
         background: white !important;
         padding: 20px !important;
         overflow-y: auto !important;
+        overflow-x: hidden !important;
     `;
 
-    // Crear el contenido completo
+    // Crear el contenido completo con diseño mejorado
     onboardingContainer.innerHTML = `
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <!-- Header -->
-            <div class="mb-8">
-                <h1 class="text-3xl font-bold text-gray-900">Procesos de Onboarding</h1>
-                <p class="mt-2 text-gray-600">Gestiona el proceso de incorporación de nuevos empleados</p>
-            </div>
-
-            <!-- Stats Cards -->
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                <div class="bg-white rounded-lg shadow-sm p-6">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0">
-                            <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                                <i class="fas fa-clock text-blue-600"></i>
+            <!-- Header with Gradient -->
+            <div class="mb-8 relative">
+                <div class="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-8 text-white shadow-xl">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h1 class="text-4xl font-bold mb-2">🚀 Procesos de Onboarding</h1>
+                            <p class="text-blue-100 text-lg">Gestiona el proceso de incorporación de nuevos empleados</p>
+                        </div>
+                        <div class="hidden md:block">
+                            <div class="w-20 h-20 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                                <i class="fas fa-user-plus text-3xl text-white"></i>
                             </div>
-                        </div>
-                        <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-500">Pendientes</p>
-                            <p class="text-2xl font-semibold text-gray-900">12</p>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="bg-white rounded-lg shadow-sm p-6">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0">
-                            <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-                                <i class="fas fa-paper-plane text-green-600"></i>
-                            </div>
-                        </div>
-                        <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-500">Enviadas</p>
-                            <p class="text-2xl font-semibold text-gray-900">8</p>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="bg-white rounded-lg shadow-sm p-6">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0">
-                            <div class="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
-                                <i class="fas fa-exclamation-triangle text-yellow-600"></i>
-                            </div>
-                        </div>
-                        <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-500">No Firmadas</p>
-                            <p class="text-2xl font-semibold text-gray-900">5</p>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="bg-white rounded-lg shadow-sm p-6">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0">
-                            <div class="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
-                                <i class="fas fa-exclamation-circle text-red-600"></i>
-                            </div>
-                        </div>
-                        <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-500">Atrasadas</p>
-                            <p class="text-2xl font-semibold text-gray-900">3</p>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Actions Bar -->
-            <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
-                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                    <div class="flex items-center space-x-4">
-                        <button onclick="createNewOnboarding()" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition duration-200 flex items-center">
+            <!-- Enhanced Stats Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-blue-200">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-blue-600 mb-1">Pendientes</p>
+                            <p class="text-3xl font-bold text-blue-800">12</p>
+                            <p class="text-xs text-blue-500 mt-1">Esperando inicio</p>
+                        </div>
+                        <div class="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center shadow-lg">
+                            <i class="fas fa-clock text-white text-lg"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-green-200">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-green-600 mb-1">Enviadas</p>
+                            <p class="text-3xl font-bold text-green-800">8</p>
+                            <p class="text-xs text-green-500 mt-1">En proceso</p>
+                        </div>
+                        <div class="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center shadow-lg">
+                            <i class="fas fa-paper-plane text-white text-lg"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-yellow-200">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-yellow-600 mb-1">No Firmadas</p>
+                            <p class="text-3xl font-bold text-yellow-800">5</p>
+                            <p class="text-xs text-yellow-500 mt-1">Requieren atención</p>
+                        </div>
+                        <div class="w-12 h-12 bg-yellow-500 rounded-xl flex items-center justify-center shadow-lg">
+                            <i class="fas fa-exclamation-triangle text-white text-lg"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-gradient-to-br from-red-50 to-red-100 rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-red-200">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-red-600 mb-1">Atrasadas</p>
+                            <p class="text-3xl font-bold text-red-800">3</p>
+                            <p class="text-xs text-red-500 mt-1">Urgente</p>
+                        </div>
+                        <div class="w-12 h-12 bg-red-500 rounded-xl flex items-center justify-center shadow-lg">
+                            <i class="fas fa-exclamation-circle text-white text-lg"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Enhanced Actions Bar -->
+            <div class="bg-white rounded-2xl shadow-lg p-6 mb-6 border border-gray-100">
+                <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                    <div class="flex flex-wrap items-center gap-3">
+                        <button onclick="createNewOnboarding()" class="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 flex items-center shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
                             <i class="fas fa-plus mr-2"></i>
                             Nuevo Onboarding
                         </button>
-                        <button onclick="exportOnboarding()" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition duration-200 flex items-center">
+                        <button onclick="exportOnboarding()" class="bg-gradient-to-r from-green-600 to-green-700 text-white px-6 py-3 rounded-xl hover:from-green-700 hover:to-green-800 transition-all duration-200 flex items-center shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
                             <i class="fas fa-download mr-2"></i>
                             Exportar
                         </button>
+                        <button onclick="bulkActions()" class="bg-gradient-to-r from-purple-600 to-purple-700 text-white px-6 py-3 rounded-xl hover:from-purple-700 hover:to-purple-800 transition-all duration-200 flex items-center shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
+                            <i class="fas fa-tasks mr-2"></i>
+                            Acciones Masivas
+                        </button>
                     </div>
-                    <div class="mt-4 sm:mt-0">
-                        <div class="flex items-center space-x-2">
-                            <input type="text" placeholder="Buscar empleado..." class="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
-                            <select class="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
-                                <option value="">Todos los estados</option>
-                                <option value="pending">Pendientes</option>
-                                <option value="sent">Enviadas</option>
-                                <option value="unsigned">No Firmadas</option>
-                                <option value="overdue">Atrasadas</option>
-                            </select>
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                        <div class="relative">
+                            <input type="text" placeholder="Buscar empleado..." class="w-full sm:w-64 pl-10 pr-4 py-3 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm">
+                            <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
                         </div>
+                        <select class="px-4 py-3 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm">
+                            <option value="">Todos los estados</option>
+                            <option value="pending">Pendientes</option>
+                            <option value="sent">Enviadas</option>
+                            <option value="unsigned">No Firmadas</option>
+                            <option value="overdue">Atrasadas</option>
+                        </select>
                     </div>
                 </div>
             </div>
 
-            <!-- Onboarding Table -->
-            <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+            <!-- Enhanced Onboarding Table -->
+            <div class="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100">
+                <div class="px-6 py-4 bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-800 flex items-center">
+                        <i class="fas fa-table mr-2 text-blue-600"></i>
+                        Lista de Procesos de Onboarding
+                    </h3>
+                </div>
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                             <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Empleado</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha Inicio</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Progreso</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-user mr-2 text-gray-400"></i>
+                                        Empleado
+                                    </div>
+                                </th>
+                                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-calendar mr-2 text-gray-400"></i>
+                                        Fecha Inicio
+                                    </div>
+                                </th>
+                                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-flag mr-2 text-gray-400"></i>
+                                        Estado
+                                    </div>
+                                </th>
+                                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-chart-line mr-2 text-gray-400"></i>
+                                        Progreso
+                                    </div>
+                                </th>
+                                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-cogs mr-2 text-gray-400"></i>
+                                        Acciones
+                                    </div>
+                                </th>
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
-                            <tr class="hover:bg-gray-50">
+                            <tr class="hover:bg-blue-50 transition-colors duration-200">
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="flex items-center">
-                                        <div class="flex-shrink-0 h-10 w-10">
-                                            <div class="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
-                                                <span class="text-sm font-medium text-blue-600">JD</span>
+                                        <div class="flex-shrink-0 h-12 w-12">
+                                            <div class="h-12 w-12 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center shadow-lg">
+                                                <span class="text-sm font-bold text-white">JD</span>
                                             </div>
                                         </div>
                                         <div class="ml-4">
-                                            <div class="text-sm font-medium text-gray-900">Juan Díaz</div>
+                                            <div class="text-sm font-semibold text-gray-900">Juan Díaz</div>
                                             <div class="text-sm text-gray-500">juan.diaz@empresa.com</div>
+                                            <div class="text-xs text-blue-600 font-medium">Desarrollador Senior</div>
                                         </div>
                                     </div>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">15/01/2025</td>
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">Pendiente</span>
+                                    <div class="text-sm font-medium text-gray-900">15/01/2025</div>
+                                    <div class="text-xs text-gray-500">Hace 3 días</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="inline-flex px-3 py-1 text-xs font-semibold rounded-full bg-gradient-to-r from-yellow-100 to-yellow-200 text-yellow-800 border border-yellow-300">
+                                        <i class="fas fa-clock mr-1"></i>
+                                        Pendiente
+                                    </span>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="flex items-center">
-                                        <div class="w-full bg-gray-200 rounded-full h-2">
-                                            <div class="bg-blue-600 h-2 rounded-full" style="width: 60%"></div>
+                                        <div class="w-full bg-gray-200 rounded-full h-3 mr-3">
+                                            <div class="bg-gradient-to-r from-blue-500 to-blue-600 h-3 rounded-full shadow-sm" style="width: 60%"></div>
                                         </div>
-                                        <span class="ml-2 text-sm text-gray-600">60%</span>
+                                        <span class="text-sm font-semibold text-gray-700">60%</span>
                                     </div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                    <button onclick="viewOnboarding(1)" class="text-blue-600 hover:text-blue-900 mr-3">Ver</button>
-                                    <button onclick="editOnboarding(1)" class="text-green-600 hover:text-green-900 mr-3">Editar</button>
-                                    <button onclick="sendReminder(1)" class="text-yellow-600 hover:text-yellow-900">Recordar</button>
+                                    <div class="flex items-center space-x-2">
+                                        <button onclick="viewOnboarding(1)" class="bg-blue-100 text-blue-700 px-3 py-1 rounded-lg hover:bg-blue-200 transition-colors duration-200 text-xs font-medium">
+                                            <i class="fas fa-eye mr-1"></i>Ver
+                                        </button>
+                                        <button onclick="editOnboarding(1)" class="bg-green-100 text-green-700 px-3 py-1 rounded-lg hover:bg-green-200 transition-colors duration-200 text-xs font-medium">
+                                            <i class="fas fa-edit mr-1"></i>Editar
+                                        </button>
+                                        <button onclick="sendReminder(1)" class="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-lg hover:bg-yellow-200 transition-colors duration-200 text-xs font-medium">
+                                            <i class="fas fa-bell mr-1"></i>Recordar
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
-                            <tr class="hover:bg-gray-50">
+                            <tr class="hover:bg-green-50 transition-colors duration-200">
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="flex items-center">
-                                        <div class="flex-shrink-0 h-10 w-10">
-                                            <div class="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
-                                                <span class="text-sm font-medium text-green-600">MR</span>
+                                        <div class="flex-shrink-0 h-12 w-12">
+                                            <div class="h-12 w-12 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center shadow-lg">
+                                                <span class="text-sm font-bold text-white">MR</span>
                                             </div>
                                         </div>
                                         <div class="ml-4">
-                                            <div class="text-sm font-medium text-gray-900">María Rodríguez</div>
+                                            <div class="text-sm font-semibold text-gray-900">María Rodríguez</div>
                                             <div class="text-sm text-gray-500">maria.rodriguez@empresa.com</div>
+                                            <div class="text-xs text-green-600 font-medium">Diseñadora UX</div>
                                         </div>
                                     </div>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">10/01/2025</td>
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Completado</span>
+                                    <div class="text-sm font-medium text-gray-900">10/01/2025</div>
+                                    <div class="text-xs text-gray-500">Hace 8 días</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="inline-flex px-3 py-1 text-xs font-semibold rounded-full bg-gradient-to-r from-green-100 to-green-200 text-green-800 border border-green-300">
+                                        <i class="fas fa-check-circle mr-1"></i>
+                                        Completado
+                                    </span>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="flex items-center">
-                                        <div class="w-full bg-gray-200 rounded-full h-2">
-                                            <div class="bg-green-600 h-2 rounded-full" style="width: 100%"></div>
+                                        <div class="w-full bg-gray-200 rounded-full h-3 mr-3">
+                                            <div class="bg-gradient-to-r from-green-500 to-green-600 h-3 rounded-full shadow-sm" style="width: 100%"></div>
                                         </div>
-                                        <span class="ml-2 text-sm text-gray-600">100%</span>
+                                        <span class="text-sm font-semibold text-gray-700">100%</span>
                                     </div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                    <button onclick="viewOnboarding(2)" class="text-blue-600 hover:text-blue-900 mr-3">Ver</button>
-                                    <button onclick="downloadCertificate(2)" class="text-green-600 hover:text-green-900">Certificado</button>
+                                    <div class="flex items-center space-x-2">
+                                        <button onclick="viewOnboarding(2)" class="bg-blue-100 text-blue-700 px-3 py-1 rounded-lg hover:bg-blue-200 transition-colors duration-200 text-xs font-medium">
+                                            <i class="fas fa-eye mr-1"></i>Ver
+                                        </button>
+                                        <button onclick="downloadCertificate(2)" class="bg-green-100 text-green-700 px-3 py-1 rounded-lg hover:bg-green-200 transition-colors duration-200 text-xs font-medium">
+                                            <i class="fas fa-certificate mr-1"></i>Certificado
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                         </tbody>
@@ -1316,6 +1486,511 @@ function createOnboardingOverlay() {
     console.log('✅ Onboarding overlay creado');
 }
 
+// Global function to create profile overlay
+function createProfileOverlay() {
+    console.log('🔧 Creating profile overlay...');
+    
+    // Limpiar cualquier overlay existente
+    document.querySelectorAll('[id$="-section"]').forEach(section => {
+        if (section.style.position === 'fixed') {
+            section.remove();
+        }
+    });
+
+    // Limpiar botones de cerrar
+    document.querySelectorAll('button[class*="fixed top-20 right-4"]').forEach(btn => {
+        btn.remove();
+    });
+
+    // Crear profile container
+    const profileContainer = document.createElement('div');
+    profileContainer.id = 'profile-section';
+    profileContainer.className = 'section';
+    profileContainer.style.cssText = `
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        height: calc(100vh - 64px) !important;
+        width: 100% !important;
+        position: fixed !important;
+        top: 64px !important;
+        left: 0 !important;
+        z-index: 10 !important;
+        background: white !important;
+        padding: 20px !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+    `;
+
+    // Crear el contenido completo con diseño mejorado
+    profileContainer.innerHTML = `
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- Header -->
+            <div class="mb-8">
+                <div class="bg-gradient-to-r from-purple-600 to-blue-600 rounded-2xl p-8 text-white shadow-xl">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h1 class="text-4xl font-bold mb-2">👤 Mi Perfil</h1>
+                            <p class="text-purple-100 text-lg">Gestiona tu información personal y configuración</p>
+                        </div>
+                        <div class="hidden md:block">
+                            <div class="w-20 h-20 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                                <i class="fas fa-user-cog text-3xl text-white"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Profile Content -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Profile Info Card -->
+                <div class="lg:col-span-1">
+                    <div class="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+                        <div class="text-center">
+                            <div class="w-24 h-24 bg-gradient-to-br from-purple-400 to-blue-600 rounded-full flex items-center justify-center shadow-lg mx-auto mb-4">
+                                <span id="profileInitials" class="text-2xl font-bold text-white">US</span>
+                            </div>
+                            <h3 id="profileName" class="text-xl font-semibold text-gray-900 mb-2">Usuario</h3>
+                            <p id="profileRole" class="text-sm text-gray-500 mb-4">Administrador</p>
+                            <p id="profileEmail" class="text-sm text-gray-600 mb-6">usuario@empresa.com</p>
+                            
+                            <!-- Quick Actions -->
+                            <div class="space-y-2">
+                                <button onclick="editProfile()" class="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200 text-sm font-medium">
+                                    <i class="fas fa-edit mr-2"></i>Editar Perfil
+                                </button>
+                                <button onclick="changePassword()" class="w-full bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors duration-200 text-sm font-medium">
+                                    <i class="fas fa-key mr-2"></i>Cambiar Contraseña
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Profile Details -->
+                <div class="lg:col-span-2">
+                    <div class="bg-white rounded-2xl shadow-lg border border-gray-100">
+                        <div class="px-6 py-4 bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
+                            <h3 class="text-lg font-semibold text-gray-800 flex items-center">
+                                <i class="fas fa-info-circle mr-2 text-purple-600"></i>
+                                Información Personal
+                            </h3>
+                        </div>
+                        <div class="p-6">
+                            <form id="profileForm" class="space-y-6">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Nombre Completo</label>
+                                        <input type="text" id="profileFullName" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="Ingresa tu nombre completo">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                                        <input type="email" id="profileEmailInput" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="tu@empresa.com">
+                                    </div>
+                                </div>
+                                
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Teléfono</label>
+                                        <input type="tel" id="profilePhone" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="+52 55 1234 5678">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Departamento</label>
+                                        <select id="profileDepartment" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                                            <option value="">Selecciona un departamento</option>
+                                            <option value="IT">Tecnología de la Información</option>
+                                            <option value="HR">Recursos Humanos</option>
+                                            <option value="Finance">Finanzas</option>
+                                            <option value="Operations">Operaciones</option>
+                                            <option value="Sales">Ventas</option>
+                                            <option value="Marketing">Marketing</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Ubicación</label>
+                                    <select id="profileLocation" class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                                        <option value="">Selecciona una ubicación</option>
+                                        <option value="MX">México</option>
+                                        <option value="CL">Chile</option>
+                                        <option value="REMOTO">Remoto</option>
+                                    </select>
+                                </div>
+
+                                <div class="flex justify-end space-x-3 pt-4">
+                                    <button type="button" onclick="cancelProfileEdit()" class="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors duration-200">
+                                        Cancelar
+                                    </button>
+                                    <button type="submit" class="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors duration-200">
+                                        <i class="fas fa-save mr-2"></i>Guardar Cambios
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Activity Log -->
+                    <div class="mt-8 bg-white rounded-2xl shadow-lg border border-gray-100">
+                        <div class="px-6 py-4 bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
+                            <h3 class="text-lg font-semibold text-gray-800 flex items-center">
+                                <i class="fas fa-history mr-2 text-purple-600"></i>
+                                Actividad Reciente
+                            </h3>
+                        </div>
+                        <div class="p-6">
+                            <div class="space-y-4">
+                                <div class="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg">
+                                    <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                                        <i class="fas fa-sign-in-alt text-white text-sm"></i>
+                                    </div>
+                                    <div class="flex-1">
+                                        <p class="text-sm font-medium text-gray-900">Inicio de sesión</p>
+                                        <p class="text-xs text-gray-500">Hace 2 horas</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="flex items-center space-x-3 p-3 bg-green-50 rounded-lg">
+                                    <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                                        <i class="fas fa-user-edit text-white text-sm"></i>
+                                    </div>
+                                    <div class="flex-1">
+                                        <p class="text-sm font-medium text-gray-900">Perfil actualizado</p>
+                                        <p class="text-xs text-gray-500">Hace 1 día</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="flex items-center space-x-3 p-3 bg-yellow-50 rounded-lg">
+                                    <div class="w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center">
+                                        <i class="fas fa-key text-white text-sm"></i>
+                                    </div>
+                                    <div class="flex-1">
+                                        <p class="text-sm font-medium text-gray-900">Contraseña cambiada</p>
+                                        <p class="text-xs text-gray-500">Hace 3 días</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Crear botón de cerrar
+    const closeButton = document.createElement('button');
+    closeButton.innerHTML = '<i class="fas fa-times"></i>';
+    closeButton.className = 'fixed top-20 right-4 z-50 bg-red-500 text-white w-10 h-10 rounded-full flex items-center justify-center hover:bg-red-600 transition-colors duration-200 shadow-lg';
+    closeButton.onclick = function() {
+        profileContainer.remove();
+        closeButton.remove();
+    };
+
+    // Agregar al body
+    document.body.appendChild(profileContainer);
+    document.body.appendChild(closeButton);
+
+    // Initialize profile section
+    setTimeout(() => {
+        initializeProfileSection();
+    }, 200);
+
+    console.log('✅ Profile overlay creado');
+}
+
+// Initialize profile section
+function initializeProfileSection() {
+    console.log('🔧 Inicializando sección de perfil...');
+    
+    // Add event listener to profile form
+    const profileForm = document.getElementById('profileForm');
+    if (profileForm) {
+        profileForm.addEventListener('submit', handleProfileSubmit);
+    }
+    
+    // Load profile data
+    loadProfileData();
+}
+
+// Global functions for profile management
+function editProfile() {
+    console.log('🔧 Editando perfil...');
+    
+    // Get user data to check permissions
+    const isAdmin = window.auth && window.auth.user && window.auth.user.role === 'admin';
+    
+    // Enable form fields for editing based on permissions
+    const form = document.getElementById('profileForm');
+    const inputs = form.querySelectorAll('input, select');
+    
+    inputs.forEach(input => {
+        const fieldId = input.id;
+        
+        // Check if field is admin-only
+        const adminOnlyFields = ['profileFullName', 'profileEmailInput', 'profileDepartment', 'profileLocation'];
+        const isAdminOnlyField = adminOnlyFields.includes(fieldId);
+        
+        if (isAdminOnlyField && !isAdmin) {
+            // Keep admin-only fields disabled for non-admin users
+            input.disabled = true;
+            input.classList.add('bg-gray-100');
+        } else {
+            // Enable field for editing
+            input.disabled = false;
+            input.classList.remove('bg-gray-100');
+            input.classList.add('bg-white');
+        }
+    });
+    
+    // Show save/cancel buttons
+    const buttons = form.querySelectorAll('button[type="submit"], button[onclick="cancelProfileEdit()"]');
+    buttons.forEach(button => {
+        button.classList.remove('hidden');
+    });
+}
+
+function cancelProfileEdit() {
+    console.log('❌ Cancelando edición de perfil...');
+    
+    // Get user data to check permissions
+    const isAdmin = window.auth && window.auth.user && window.auth.user.role === 'admin';
+    
+    // Disable form fields based on permissions
+    const form = document.getElementById('profileForm');
+    const inputs = form.querySelectorAll('input, select');
+    
+    inputs.forEach(input => {
+        const fieldId = input.id;
+        
+        // Check if field is admin-only
+        const adminOnlyFields = ['profileFullName', 'profileEmailInput', 'profileDepartment', 'profileLocation'];
+        const isAdminOnlyField = adminOnlyFields.includes(fieldId);
+        
+        if (isAdminOnlyField && !isAdmin) {
+            // Keep admin-only fields disabled for non-admin users
+            input.disabled = true;
+            input.classList.add('bg-gray-100');
+        } else {
+            // Disable field
+            input.disabled = true;
+            input.classList.remove('bg-white');
+            input.classList.add('bg-gray-100');
+        }
+    });
+    
+    // Hide save/cancel buttons
+    const buttons = form.querySelectorAll('button[type="submit"], button[onclick="cancelProfileEdit()"]');
+    buttons.forEach(button => {
+        button.classList.add('hidden');
+    });
+    
+    // Reset form to original values
+    loadProfileData();
+}
+
+function loadProfileData() {
+    console.log('📊 Cargando datos del perfil...');
+    
+    // Get user data from auth
+    if (window.auth && window.auth.user) {
+        const user = window.auth.user;
+        const isAdmin = user.role === 'admin';
+        
+        // Update profile card
+        const profileInitials = document.getElementById('profileInitials');
+        const profileName = document.getElementById('profileName');
+        const profileRole = document.getElementById('profileRole');
+        const profileEmail = document.getElementById('profileEmail');
+        
+        if (profileInitials) {
+            const initials = user.full_name
+                .split(' ')
+                .map(name => name[0])
+                .join('')
+                .toUpperCase();
+            profileInitials.textContent = initials;
+        }
+        
+        if (profileName) {
+            profileName.textContent = user.full_name;
+        }
+        
+        if (profileRole) {
+            profileRole.textContent = user.role === 'admin' ? 'Administrador' : 'Usuario';
+        }
+        
+        if (profileEmail) {
+            profileEmail.textContent = user.email;
+        }
+        
+        // Update form fields
+        const profileFullName = document.getElementById('profileFullName');
+        const profileEmailInput = document.getElementById('profileEmailInput');
+        const profilePhone = document.getElementById('profilePhone');
+        const profileDepartment = document.getElementById('profileDepartment');
+        const profileLocation = document.getElementById('profileLocation');
+        
+        if (profileFullName) {
+            profileFullName.value = user.full_name || '';
+        }
+        
+        if (profileEmailInput) {
+            profileEmailInput.value = user.email || '';
+        }
+        
+        if (profilePhone) {
+            profilePhone.value = user.phone || '';
+        }
+        
+        if (profileDepartment) {
+            profileDepartment.value = user.department || '';
+        }
+        
+        if (profileLocation) {
+            profileLocation.value = user.location || '';
+        }
+        
+        // Apply permission restrictions
+        applyProfilePermissions(isAdmin);
+        
+        // Initially disable form fields
+        const form = document.getElementById('profileForm');
+        if (form) {
+            const inputs = form.querySelectorAll('input, select');
+            inputs.forEach(input => {
+                input.disabled = true;
+                input.classList.add('bg-gray-100');
+            });
+            
+            // Hide save/cancel buttons initially
+            const buttons = form.querySelectorAll('button[type="submit"], button[onclick="cancelProfileEdit()"]');
+            buttons.forEach(button => {
+                button.classList.add('hidden');
+            });
+        }
+    }
+}
+
+// Apply permission restrictions to profile fields
+function applyProfilePermissions(isAdmin) {
+    console.log('🔒 Aplicando permisos de perfil. Es admin:', isAdmin);
+    
+    const profileFullName = document.getElementById('profileFullName');
+    const profileEmailInput = document.getElementById('profileEmailInput');
+    const profilePhone = document.getElementById('profilePhone');
+    const profileDepartment = document.getElementById('profileDepartment');
+    const profileLocation = document.getElementById('profileLocation');
+    
+    // Fields that only admins can edit
+    const adminOnlyFields = [profileFullName, profileEmailInput, profileDepartment, profileLocation];
+    
+    // Fields that all users can edit
+    const userEditableFields = [profilePhone];
+    
+    // Apply restrictions to admin-only fields
+    adminOnlyFields.forEach(field => {
+        if (field) {
+            if (!isAdmin) {
+                // Add visual indicator for restricted fields
+                field.classList.add('bg-gray-50', 'cursor-not-allowed');
+                field.title = 'Solo los administradores pueden modificar este campo';
+                
+                // Add lock icon to label
+                const label = field.previousElementSibling;
+                if (label && label.tagName === 'LABEL') {
+                    if (!label.querySelector('.fa-lock')) {
+                        const lockIcon = document.createElement('i');
+                        lockIcon.className = 'fas fa-lock text-gray-400 ml-1';
+                        lockIcon.title = 'Solo administradores';
+                        label.appendChild(lockIcon);
+                    }
+                }
+            } else {
+                // Remove restrictions for admins
+                field.classList.remove('bg-gray-50', 'cursor-not-allowed');
+                field.title = '';
+                
+                // Remove lock icon from label
+                const label = field.previousElementSibling;
+                if (label && label.tagName === 'LABEL') {
+                    const lockIcon = label.querySelector('.fa-lock');
+                    if (lockIcon) {
+                        lockIcon.remove();
+                    }
+                }
+            }
+        }
+    });
+    
+    // Ensure user-editable fields are always accessible
+    userEditableFields.forEach(field => {
+        if (field) {
+            field.classList.remove('bg-gray-50', 'cursor-not-allowed');
+            field.title = '';
+            
+            // Remove lock icon from label
+            const label = field.previousElementSibling;
+            if (label && label.tagName === 'LABEL') {
+                const lockIcon = label.querySelector('.fa-lock');
+                if (lockIcon) {
+                    lockIcon.remove();
+                }
+            }
+        }
+    });
+}
+
+// Handle profile form submission
+function handleProfileSubmit(event) {
+    event.preventDefault();
+    console.log('💾 Guardando perfil...');
+    
+    // Get user data to check permissions
+    const isAdmin = window.auth && window.auth.user && window.auth.user.role === 'admin';
+    
+    const formData = {
+        full_name: document.getElementById('profileFullName').value,
+        email: document.getElementById('profileEmailInput').value,
+        phone: document.getElementById('profilePhone').value,
+        department: document.getElementById('profileDepartment').value,
+        location: document.getElementById('profileLocation').value
+    };
+    
+    // Validate permissions for admin-only fields
+    const adminOnlyFields = ['full_name', 'email', 'department', 'location'];
+    const restrictedChanges = [];
+    
+    adminOnlyFields.forEach(field => {
+        const currentValue = window.auth.user[field] || '';
+        const newValue = formData[field];
+        
+        if (currentValue !== newValue && !isAdmin) {
+            restrictedChanges.push(field);
+        }
+    });
+    
+    if (restrictedChanges.length > 0) {
+        // Show error message for restricted changes
+        if (window.app) {
+            window.app.showNotification('error', 'Permisos Insuficientes', 
+                'Solo los administradores pueden modificar: ' + restrictedChanges.join(', '));
+        }
+        return;
+    }
+    
+    // Here you would typically send the data to the server
+    console.log('Datos del perfil:', formData);
+    
+    // Show success message
+    if (window.app) {
+        window.app.showNotification('success', 'Perfil Actualizado', 'Tu información ha sido guardada correctamente.');
+    }
+    
+    // Disable form after saving
+    cancelProfileEdit();
+}
+
 // Global function to create offboarding overlay
 function createOffboardingOverlay() {
     console.log('🔧 Creating offboarding overlay...');
@@ -1340,244 +2015,335 @@ function createOffboardingOverlay() {
         display: block !important;
         visibility: visible !important;
         opacity: 1 !important;
-        height: auto !important;
-        min-height: calc(100vh - 64px) !important;
+        height: calc(100vh - 64px) !important;
         width: 100% !important;
         position: fixed !important;
         top: 64px !important;
         left: 0 !important;
-        z-index: 1000 !important;
+        z-index: 10 !important;
         background: white !important;
         padding: 20px !important;
         overflow-y: auto !important;
+        overflow-x: hidden !important;
     `;
 
-    // Crear el contenido completo
+    // Crear el contenido completo con diseño mejorado
     offboardingContainer.innerHTML = `
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <!-- Header -->
-            <div class="mb-8">
-                <h1 class="text-3xl font-bold text-gray-900">Procesos de Offboarding</h1>
-                <p class="mt-2 text-gray-600">Gestiona el proceso de salida de empleados</p>
-            </div>
-
-            <!-- Stats Cards -->
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                <div class="bg-white rounded-lg shadow-sm p-6">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0">
-                            <div class="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
-                                <i class="fas fa-clock text-orange-600"></i>
+            <!-- Header with Gradient -->
+            <div class="mb-8 relative">
+                <div class="bg-gradient-to-r from-orange-600 to-red-600 rounded-2xl p-8 text-white shadow-xl">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h1 class="text-4xl font-bold mb-2">🚪 Procesos de Offboarding</h1>
+                            <p class="text-orange-100 text-lg">Gestiona el proceso de salida de empleados</p>
+                        </div>
+                        <div class="hidden md:block">
+                            <div class="w-20 h-20 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                                <i class="fas fa-user-minus text-3xl text-white"></i>
                             </div>
-                        </div>
-                        <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-500">En Proceso</p>
-                            <p class="text-2xl font-semibold text-gray-900">8</p>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="bg-white rounded-lg shadow-sm p-6">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0">
-                            <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                                <i class="fas fa-laptop text-blue-600"></i>
-                            </div>
-                        </div>
-                        <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-500">Assets Pendientes</p>
-                            <p class="text-2xl font-semibold text-gray-900">15</p>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="bg-white rounded-lg shadow-sm p-6">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0">
-                            <div class="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
-                                <i class="fas fa-exclamation-triangle text-yellow-600"></i>
-                            </div>
-                        </div>
-                        <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-500">Documentos Faltantes</p>
-                            <p class="text-2xl font-semibold text-gray-900">6</p>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="bg-white rounded-lg shadow-sm p-6">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0">
-                            <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-                                <i class="fas fa-check-circle text-green-600"></i>
-                            </div>
-                        </div>
-                        <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-500">Completados</p>
-                            <p class="text-2xl font-semibold text-gray-900">12</p>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Actions Bar -->
-            <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
-                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                    <div class="flex items-center space-x-4">
-                        <button onclick="createNewOffboarding()" class="bg-orange-600 text-white px-4 py-2 rounded-md hover:bg-orange-700 transition duration-200 flex items-center">
+            <!-- Enhanced Stats Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-orange-200">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-orange-600 mb-1">En Proceso</p>
+                            <p class="text-3xl font-bold text-orange-800">8</p>
+                            <p class="text-xs text-orange-500 mt-1">Activos</p>
+                        </div>
+                        <div class="w-12 h-12 bg-orange-500 rounded-xl flex items-center justify-center shadow-lg">
+                            <i class="fas fa-clock text-white text-lg"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-blue-200">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-blue-600 mb-1">Assets Pendientes</p>
+                            <p class="text-3xl font-bold text-blue-800">15</p>
+                            <p class="text-xs text-blue-500 mt-1">Por recuperar</p>
+                        </div>
+                        <div class="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center shadow-lg">
+                            <i class="fas fa-laptop text-white text-lg"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-yellow-200">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-yellow-600 mb-1">Documentos Faltantes</p>
+                            <p class="text-3xl font-bold text-yellow-800">6</p>
+                            <p class="text-xs text-yellow-500 mt-1">Requieren atención</p>
+                        </div>
+                        <div class="w-12 h-12 bg-yellow-500 rounded-xl flex items-center justify-center shadow-lg">
+                            <i class="fas fa-exclamation-triangle text-white text-lg"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-green-200">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-green-600 mb-1">Completados</p>
+                            <p class="text-3xl font-bold text-green-800">12</p>
+                            <p class="text-xs text-green-500 mt-1">Finalizados</p>
+                        </div>
+                        <div class="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center shadow-lg">
+                            <i class="fas fa-check-circle text-white text-lg"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Enhanced Actions Bar -->
+            <div class="bg-white rounded-2xl shadow-lg p-6 mb-6 border border-gray-100">
+                <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                    <div class="flex flex-wrap items-center gap-3">
+                        <button onclick="createNewOffboarding()" class="bg-gradient-to-r from-orange-600 to-orange-700 text-white px-6 py-3 rounded-xl hover:from-orange-700 hover:to-orange-800 transition-all duration-200 flex items-center shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
                             <i class="fas fa-plus mr-2"></i>
                             Nuevo Offboarding
                         </button>
-                        <button onclick="exportOffboarding()" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition duration-200 flex items-center">
+                        <button onclick="exportOffboarding()" class="bg-gradient-to-r from-green-600 to-green-700 text-white px-6 py-3 rounded-xl hover:from-green-700 hover:to-green-800 transition-all duration-200 flex items-center shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
                             <i class="fas fa-download mr-2"></i>
                             Exportar
                         </button>
-                        <button onclick="generateOffboardingReport()" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition duration-200 flex items-center">
+                        <button onclick="generateOffboardingReport()" class="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 flex items-center shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
                             <i class="fas fa-chart-bar mr-2"></i>
                             Reporte
                         </button>
+                        <button onclick="bulkOffboardingActions()" class="bg-gradient-to-r from-purple-600 to-purple-700 text-white px-6 py-3 rounded-xl hover:from-purple-700 hover:to-purple-800 transition-all duration-200 flex items-center shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
+                            <i class="fas fa-tasks mr-2"></i>
+                            Acciones Masivas
+                        </button>
                     </div>
-                    <div class="mt-4 sm:mt-0">
-                        <div class="flex items-center space-x-2">
-                            <input type="text" placeholder="Buscar empleado..." class="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
-                            <select class="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
-                                <option value="">Todos los estados</option>
-                                <option value="in_progress">En Proceso</option>
-                                <option value="pending_assets">Assets Pendientes</option>
-                                <option value="missing_docs">Documentos Faltantes</option>
-                                <option value="completed">Completados</option>
-                            </select>
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                        <div class="relative">
+                            <input type="text" placeholder="Buscar empleado..." class="w-full sm:w-64 pl-10 pr-4 py-3 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent shadow-sm">
+                            <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
                         </div>
+                        <select class="px-4 py-3 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent shadow-sm">
+                            <option value="">Todos los estados</option>
+                            <option value="in_progress">En Proceso</option>
+                            <option value="pending_assets">Assets Pendientes</option>
+                            <option value="missing_docs">Documentos Faltantes</option>
+                            <option value="completed">Completados</option>
+                        </select>
                     </div>
                 </div>
             </div>
 
-            <!-- Offboarding Table -->
-            <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+            <!-- Enhanced Offboarding Table -->
+            <div class="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100">
+                <div class="px-6 py-4 bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-800 flex items-center">
+                        <i class="fas fa-table mr-2 text-orange-600"></i>
+                        Lista de Procesos de Offboarding
+                    </h3>
+                </div>
                 <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
+                    <table class="w-full divide-y divide-gray-200" style="min-width: 1200px;">
                         <thead class="bg-gray-50">
                             <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Empleado</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha Salida</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assets</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Progreso</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                                <th class="px-4 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-1/4">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-user mr-2 text-gray-400"></i>
+                                        Empleado
+                                    </div>
+                                </th>
+                                <th class="px-4 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-1/6">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-calendar mr-2 text-gray-400"></i>
+                                        Fecha Salida
+                                    </div>
+                                </th>
+                                <th class="px-4 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-1/6">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-flag mr-2 text-gray-400"></i>
+                                        Estado
+                                    </div>
+                                </th>
+                                <th class="px-4 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-1/6">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-laptop mr-2 text-gray-400"></i>
+                                        Assets
+                                    </div>
+                                </th>
+                                <th class="px-4 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-1/6">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-chart-line mr-2 text-gray-400"></i>
+                                        Progreso
+                                    </div>
+                                </th>
+                                <th class="px-4 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-1/6">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-cogs mr-2 text-gray-400"></i>
+                                        Acciones
+                                    </div>
+                                </th>
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
-                            <tr class="hover:bg-gray-50">
-                                <td class="px-6 py-4 whitespace-nowrap">
+                            <tr class="hover:bg-orange-50 transition-colors duration-200">
+                                <td class="px-4 py-4 w-1/4">
                                     <div class="flex items-center">
-                                        <div class="flex-shrink-0 h-10 w-10">
-                                            <div class="h-10 w-10 rounded-full bg-orange-100 flex items-center justify-center">
-                                                <span class="text-sm font-medium text-orange-600">AL</span>
+                                        <div class="flex-shrink-0 h-12 w-12">
+                                            <div class="h-12 w-12 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center shadow-lg">
+                                                <span class="text-sm font-bold text-white">AL</span>
                                             </div>
                                         </div>
                                         <div class="ml-4">
-                                            <div class="text-sm font-medium text-gray-900">Ana López</div>
+                                            <div class="text-sm font-semibold text-gray-900">Ana López</div>
                                             <div class="text-sm text-gray-500">ana.lopez@empresa.com</div>
+                                            <div class="text-xs text-orange-600 font-medium">Gerente de Ventas</div>
                                         </div>
                                     </div>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">20/01/2025</td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-orange-100 text-orange-800">En Proceso</span>
+                                <td class="px-4 py-4 w-1/6">
+                                    <div class="text-sm font-medium text-gray-900">20/01/2025</div>
+                                    <div class="text-xs text-gray-500">Hace 2 días</div>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
+                                <td class="px-4 py-4 w-1/6">
+                                    <span class="inline-flex px-3 py-1 text-xs font-semibold rounded-full bg-gradient-to-r from-orange-100 to-orange-200 text-orange-800 border border-orange-300">
+                                        <i class="fas fa-clock mr-1"></i>
+                                        En Proceso
+                                    </span>
+                                </td>
+                                <td class="px-4 py-4 w-1/6">
                                     <div class="flex items-center">
-                                        <i class="fas fa-laptop text-blue-600 mr-1"></i>
-                                        <span class="text-sm text-gray-900">2 pendientes</span>
+                                        <i class="fas fa-laptop text-blue-600 mr-2"></i>
+                                        <span class="text-sm text-gray-900 font-medium">2 pendientes</span>
                                     </div>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
+                                <td class="px-4 py-4 w-1/6">
                                     <div class="flex items-center">
-                                        <div class="w-full bg-gray-200 rounded-full h-2">
-                                            <div class="bg-orange-600 h-2 rounded-full" style="width: 75%"></div>
+                                        <div class="w-full bg-gray-200 rounded-full h-3 mr-3">
+                                            <div class="bg-gradient-to-r from-orange-500 to-orange-600 h-3 rounded-full shadow-sm" style="width: 75%"></div>
                                         </div>
-                                        <span class="ml-2 text-sm text-gray-600">75%</span>
+                                        <span class="text-sm font-semibold text-gray-700">75%</span>
                                     </div>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                    <button onclick="viewOffboarding(1)" class="text-blue-600 hover:text-blue-900 mr-3">Ver</button>
-                                    <button onclick="editOffboarding(1)" class="text-green-600 hover:text-green-900 mr-3">Editar</button>
-                                    <button onclick="sendReminderOffboarding(1)" class="text-yellow-600 hover:text-yellow-900">Recordar</button>
+                                <td class="px-4 py-4 w-1/6 text-sm font-medium">
+                                    <div class="flex flex-col space-y-1">
+                                        <button onclick="viewOffboarding(1)" class="bg-blue-100 text-blue-700 px-2 py-1 rounded-lg hover:bg-blue-200 transition-colors duration-200 text-xs font-medium">
+                                            <i class="fas fa-eye mr-1"></i>Ver
+                                        </button>
+                                        <button onclick="editOffboarding(1)" class="bg-green-100 text-green-700 px-2 py-1 rounded-lg hover:bg-green-200 transition-colors duration-200 text-xs font-medium">
+                                            <i class="fas fa-edit mr-1"></i>Editar
+                                        </button>
+                                        <button onclick="sendReminderOffboarding(1)" class="bg-yellow-100 text-yellow-700 px-2 py-1 rounded-lg hover:bg-yellow-200 transition-colors duration-200 text-xs font-medium">
+                                            <i class="fas fa-bell mr-1"></i>Recordar
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
-                            <tr class="hover:bg-gray-50">
-                                <td class="px-6 py-4 whitespace-nowrap">
+                            <tr class="hover:bg-yellow-50 transition-colors duration-200">
+                                <td class="px-4 py-4 w-1/4">
                                     <div class="flex items-center">
-                                        <div class="flex-shrink-0 h-10 w-10">
-                                            <div class="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center">
-                                                <span class="text-sm font-medium text-red-600">CM</span>
+                                        <div class="flex-shrink-0 h-12 w-12">
+                                            <div class="h-12 w-12 rounded-full bg-gradient-to-br from-red-400 to-red-600 flex items-center justify-center shadow-lg">
+                                                <span class="text-sm font-bold text-white">CM</span>
                                             </div>
                                         </div>
                                         <div class="ml-4">
-                                            <div class="text-sm font-medium text-gray-900">Carlos Martínez</div>
+                                            <div class="text-sm font-semibold text-gray-900">Carlos Martínez</div>
                                             <div class="text-sm text-gray-500">carlos.martinez@empresa.com</div>
+                                            <div class="text-xs text-red-600 font-medium">Desarrollador</div>
                                         </div>
                                     </div>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">18/01/2025</td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">Documentos Faltantes</span>
+                                <td class="px-4 py-4 w-1/6">
+                                    <div class="text-sm font-medium text-gray-900">18/01/2025</div>
+                                    <div class="text-xs text-gray-500">Hace 4 días</div>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
+                                <td class="px-4 py-4 w-1/6">
+                                    <span class="inline-flex px-3 py-1 text-xs font-semibold rounded-full bg-gradient-to-r from-yellow-100 to-yellow-200 text-yellow-800 border border-yellow-300">
+                                        <i class="fas fa-exclamation-triangle mr-1"></i>
+                                        Documentos Faltantes
+                                    </span>
+                                </td>
+                                <td class="px-4 py-4 w-1/6">
                                     <div class="flex items-center">
-                                        <i class="fas fa-check-circle text-green-600 mr-1"></i>
-                                        <span class="text-sm text-gray-900">Completados</span>
+                                        <i class="fas fa-check-circle text-green-600 mr-2"></i>
+                                        <span class="text-sm text-gray-900 font-medium">Completados</span>
                                     </div>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
+                                <td class="px-4 py-4 w-1/6">
                                     <div class="flex items-center">
-                                        <div class="w-full bg-gray-200 rounded-full h-2">
-                                            <div class="bg-yellow-600 h-2 rounded-full" style="width: 90%"></div>
+                                        <div class="w-full bg-gray-200 rounded-full h-3 mr-3">
+                                            <div class="bg-gradient-to-r from-yellow-500 to-yellow-600 h-3 rounded-full shadow-sm" style="width: 90%"></div>
                                         </div>
-                                        <span class="ml-2 text-sm text-gray-600">90%</span>
+                                        <span class="text-sm font-semibold text-gray-700">90%</span>
                                     </div>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                    <button onclick="viewOffboarding(2)" class="text-blue-600 hover:text-blue-900 mr-3">Ver</button>
-                                    <button onclick="requestDocuments(2)" class="text-yellow-600 hover:text-yellow-900 mr-3">Solicitar Docs</button>
-                                    <button onclick="completeOffboarding(2)" class="text-green-600 hover:text-green-900">Completar</button>
+                                <td class="px-4 py-4 w-1/6 text-sm font-medium">
+                                    <div class="flex flex-col space-y-1">
+                                        <button onclick="viewOffboarding(2)" class="bg-blue-100 text-blue-700 px-2 py-1 rounded-lg hover:bg-blue-200 transition-colors duration-200 text-xs font-medium">
+                                            <i class="fas fa-eye mr-1"></i>Ver
+                                        </button>
+                                        <button onclick="requestDocuments(2)" class="bg-yellow-100 text-yellow-700 px-2 py-1 rounded-lg hover:bg-yellow-200 transition-colors duration-200 text-xs font-medium">
+                                            <i class="fas fa-file-alt mr-1"></i>Solicitar Docs
+                                        </button>
+                                        <button onclick="completeOffboarding(2)" class="bg-green-100 text-green-700 px-2 py-1 rounded-lg hover:bg-green-200 transition-colors duration-200 text-xs font-medium">
+                                            <i class="fas fa-check mr-1"></i>Completar
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
-                            <tr class="hover:bg-gray-50">
-                                <td class="px-6 py-4 whitespace-nowrap">
+                            <tr class="hover:bg-green-50 transition-colors duration-200">
+                                <td class="px-4 py-4 w-1/4">
                                     <div class="flex items-center">
-                                        <div class="flex-shrink-0 h-10 w-10">
-                                            <div class="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
-                                                <span class="text-sm font-medium text-green-600">SG</span>
+                                        <div class="flex-shrink-0 h-12 w-12">
+                                            <div class="h-12 w-12 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center shadow-lg">
+                                                <span class="text-sm font-bold text-white">SG</span>
                                             </div>
                                         </div>
                                         <div class="ml-4">
-                                            <div class="text-sm font-medium text-gray-900">Sofia García</div>
+                                            <div class="text-sm font-semibold text-gray-900">Sofia García</div>
                                             <div class="text-sm text-gray-500">sofia.garcia@empresa.com</div>
+                                            <div class="text-xs text-green-600 font-medium">Analista</div>
                                         </div>
                                     </div>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">15/01/2025</td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Completado</span>
+                                <td class="px-4 py-4 w-1/6">
+                                    <div class="text-sm font-medium text-gray-900">15/01/2025</div>
+                                    <div class="text-xs text-gray-500">Hace 7 días</div>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
+                                <td class="px-4 py-4 w-1/6">
+                                    <span class="inline-flex px-3 py-1 text-xs font-semibold rounded-full bg-gradient-to-r from-green-100 to-green-200 text-green-800 border border-green-300">
+                                        <i class="fas fa-check-circle mr-1"></i>
+                                        Completado
+                                    </span>
+                                </td>
+                                <td class="px-4 py-4 w-1/6">
                                     <div class="flex items-center">
-                                        <i class="fas fa-check-circle text-green-600 mr-1"></i>
-                                        <span class="text-sm text-gray-900">Completados</span>
+                                        <i class="fas fa-check-circle text-green-600 mr-2"></i>
+                                        <span class="text-sm text-gray-900 font-medium">Completados</span>
                                     </div>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
+                                <td class="px-4 py-4 w-1/6">
                                     <div class="flex items-center">
-                                        <div class="w-full bg-gray-200 rounded-full h-2">
-                                            <div class="bg-green-600 h-2 rounded-full" style="width: 100%"></div>
+                                        <div class="w-full bg-gray-200 rounded-full h-3 mr-3">
+                                            <div class="bg-gradient-to-r from-green-500 to-green-600 h-3 rounded-full shadow-sm" style="width: 100%"></div>
                                         </div>
-                                        <span class="ml-2 text-sm text-gray-600">100%</span>
+                                        <span class="text-sm font-semibold text-gray-700">100%</span>
                                     </div>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                    <button onclick="viewOffboarding(3)" class="text-blue-600 hover:text-blue-900 mr-3">Ver</button>
-                                    <button onclick="downloadOffboardingCertificate(3)" class="text-green-600 hover:text-green-900">Certificado</button>
+                                <td class="px-4 py-4 w-1/6 text-sm font-medium">
+                                    <div class="flex flex-col space-y-1">
+                                        <button onclick="viewOffboarding(3)" class="bg-blue-100 text-blue-700 px-2 py-1 rounded-lg hover:bg-blue-200 transition-colors duration-200 text-xs font-medium">
+                                            <i class="fas fa-eye mr-1"></i>Ver
+                                        </button>
+                                        <button onclick="downloadOffboardingCertificate(3)" class="bg-green-100 text-green-700 px-2 py-1 rounded-lg hover:bg-green-200 transition-colors duration-200 text-xs font-medium">
+                                            <i class="fas fa-certificate mr-1"></i>Certificado
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                         </tbody>
@@ -1645,6 +2411,177 @@ function createOffboardingOverlay() {
     console.log('✅ Offboarding overlay creado');
 }
 
+// Load demo data for dashboard when backend is not available
+function loadDashboardDemoData() {
+    console.log('📊 Loading dashboard demo data...');
+    
+    // Update stats cards
+    const totalUsersEl = document.getElementById('totalUsers');
+    const availableAssetsEl = document.getElementById('availableAssets');
+    const assignedAssetsEl = document.getElementById('assignedAssets');
+    const todayActivityEl = document.getElementById('todayActivity');
+    
+    if (totalUsersEl) totalUsersEl.textContent = '105';
+    if (availableAssetsEl) availableAssetsEl.textContent = '25';
+    if (assignedAssetsEl) assignedAssetsEl.textContent = '78';
+    if (todayActivityEl) todayActivityEl.textContent = '12';
+    
+    // Update recent activity
+    const recentActivityEl = document.getElementById('recentActivity');
+    if (recentActivityEl) {
+        recentActivityEl.innerHTML = `
+            <div class="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg">
+                <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                    <i class="fas fa-user-plus text-white text-sm"></i>
+                </div>
+                <div class="flex-1">
+                    <p class="text-sm font-medium text-gray-900">Nuevo usuario creado</p>
+                    <p class="text-xs text-gray-500">Juan Pérez - Departamento IT</p>
+                    <p class="text-xs text-gray-400">Hace 2 horas</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-3 p-3 bg-green-50 rounded-lg">
+                <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                    <i class="fas fa-laptop text-white text-sm"></i>
+                </div>
+                <div class="flex-1">
+                    <p class="text-sm font-medium text-gray-900">Asset asignado</p>
+                    <p class="text-xs text-gray-500">MacBook Pro asignado a María García</p>
+                    <p class="text-xs text-gray-400">Hace 4 horas</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-3 p-3 bg-yellow-50 rounded-lg">
+                <div class="w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center">
+                    <i class="fas fa-clipboard-check text-white text-sm"></i>
+                </div>
+                <div class="flex-1">
+                    <p class="text-sm font-medium text-gray-900">Proceso completado</p>
+                    <p class="text-xs text-gray-500">Onboarding de Carlos Mendoza</p>
+                    <p class="text-xs text-gray-400">Hace 6 horas</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-3 p-3 bg-purple-50 rounded-lg">
+                <div class="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
+                    <i class="fas fa-exclamation-triangle text-white text-sm"></i>
+                </div>
+                <div class="flex-1">
+                    <p class="text-sm font-medium text-gray-900">Alerta de sistema</p>
+                    <p class="text-xs text-gray-500">Mantenimiento programado para mañana</p>
+                    <p class="text-xs text-gray-400">Hace 8 horas</p>
+                </div>
+            </div>
+        `;
+    }
+    
+    // Update recent assignments
+    const recentAssignmentsEl = document.getElementById('recentAssignments');
+    if (recentAssignmentsEl) {
+        recentAssignmentsEl.innerHTML = `
+            <div class="space-y-3">
+                <div class="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center">
+                            <span class="text-white text-sm font-bold">MP</span>
+                        </div>
+                        <div>
+                            <p class="text-sm font-semibold text-gray-900">María Pérez</p>
+                            <p class="text-xs text-gray-500">Desarrolladora Senior</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-sm font-medium text-gray-900">MacBook Pro</p>
+                        <p class="text-xs text-gray-500">Asignado hoy</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center">
+                            <span class="text-white text-sm font-bold">JL</span>
+                        </div>
+                        <div>
+                            <p class="text-sm font-semibold text-gray-900">José López</p>
+                            <p class="text-xs text-gray-500">Analista de Datos</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-sm font-medium text-gray-900">Dell XPS 13</p>
+                        <p class="text-xs text-gray-500">Asignado ayer</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full flex items-center justify-center">
+                            <span class="text-white text-sm font-bold">AG</span>
+                        </div>
+                        <div>
+                            <p class="text-sm font-semibold text-gray-900">Ana García</p>
+                            <p class="text-xs text-gray-500">Gerente de Proyecto</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-sm font-medium text-gray-900">iPad Pro</p>
+                        <p class="text-xs text-gray-500">Asignado hace 2 días</p>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    // Update alerts
+    const alertsEl = document.getElementById('alerts');
+    if (alertsEl) {
+        alertsEl.innerHTML = `
+            <div class="space-y-3">
+                <div class="flex items-center space-x-3 p-3 bg-red-50 rounded-lg border border-red-200">
+                    <div class="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center">
+                        <i class="fas fa-exclamation-triangle text-white text-sm"></i>
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-sm font-medium text-red-900">Mantenimiento Programado</p>
+                        <p class="text-xs text-red-700">Sistema estará fuera de servicio mañana de 2-4 AM</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center space-x-3 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                    <div class="w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center">
+                        <i class="fas fa-clock text-white text-sm"></i>
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-sm font-medium text-yellow-900">Backup Pendiente</p>
+                        <p class="text-xs text-yellow-700">Realizar backup de datos antes del viernes</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                        <i class="fas fa-info-circle text-white text-sm"></i>
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-sm font-medium text-blue-900">Actualización Disponible</p>
+                        <p class="text-xs text-blue-700">Nueva versión del sistema disponible</p>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    console.log('✅ Dashboard demo data loaded');
+}
+
+// Close responsibility dropdown
+function closeResponsibilityDropdown() {
+    console.log('🔽 Cerrando dropdown de Cartas de Responsabilidad...');
+    const dropdown = document.getElementById('responsibilityDropdown');
+    if (dropdown) {
+        dropdown.classList.add('hidden');
+    }
+}
+
 // Initialize dropdown functionality
 function initializeDropdowns() {
     console.log('🔽 Initializing dropdowns...');
@@ -1656,57 +2593,72 @@ function initializeDropdowns() {
     console.log('Responsibility dropdown button:', responsibilityDropdownButton);
     console.log('Responsibility dropdown:', responsibilityDropdown);
     
-    if (responsibilityDropdownButton && responsibilityDropdown) {
-        console.log('✅ Responsibility dropdown elements found, adding event listener...');
-        
-        responsibilityDropdownButton.addEventListener('click', (e) => {
-            console.log('🖱️ Responsibility dropdown button clicked!');
-            e.stopPropagation();
-            const isHidden = responsibilityDropdown.classList.contains('hidden');
-            
-            console.log('Dropdown is hidden:', isHidden);
-            
-            if (isHidden) {
-                console.log('📂 Opening dropdown...');
-                responsibilityDropdown.classList.remove('hidden');
-                responsibilityDropdown.classList.add('dropdown-enter');
-                
-                // Rotate chevron
-                const chevron = responsibilityDropdownButton.querySelector('i');
-                if (chevron) {
-                    chevron.style.transform = 'rotate(180deg)';
-                    console.log('🔄 Chevron rotated');
-                }
-            } else {
-                console.log('📁 Closing dropdown...');
-                responsibilityDropdown.classList.add('hidden');
-                responsibilityDropdown.classList.remove('dropdown-enter');
-                
-                // Reset chevron
-                const chevron = responsibilityDropdownButton.querySelector('i');
-                if (chevron) {
-                    chevron.style.transform = 'rotate(0deg)';
-                    console.log('🔄 Chevron reset');
-                }
-            }
-        });
-
-        // Close dropdown when clicking outside
-        document.addEventListener('click', (e) => {
-            if (!responsibilityDropdownButton.contains(e.target) && !responsibilityDropdown.contains(e.target)) {
-                console.log('🖱️ Clicked outside dropdown, closing...');
-                responsibilityDropdown.classList.add('hidden');
-                responsibilityDropdown.classList.remove('dropdown-enter');
-                
-                // Reset chevron
-                const chevron = responsibilityDropdownButton.querySelector('i');
-                if (chevron) {
-                    chevron.style.transform = 'rotate(0deg)';
-                    console.log('🔄 Chevron reset from outside click');
-                }
-            }
-        });
+    // Check if elements exist
+    if (!responsibilityDropdownButton) {
+        console.error('❌ Responsibility dropdown button not found!');
+        return;
     }
+    if (!responsibilityDropdown) {
+        console.error('❌ Responsibility dropdown not found!');
+        return;
+    }
+    
+    // Remove any existing event listeners by cloning the element
+    const newButton = responsibilityDropdownButton.cloneNode(true);
+    responsibilityDropdownButton.parentNode.replaceChild(newButton, responsibilityDropdownButton);
+    
+    console.log('✅ Responsibility dropdown elements found, adding event listener...');
+    
+    // Add click event listener to the new button
+    newButton.addEventListener('click', (e) => {
+        console.log('🖱️ Responsibility dropdown button clicked!');
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const isHidden = responsibilityDropdown.classList.contains('hidden');
+        console.log('Dropdown is hidden:', isHidden);
+        
+        if (isHidden) {
+            console.log('📂 Opening dropdown...');
+            responsibilityDropdown.classList.remove('hidden');
+            responsibilityDropdown.classList.add('dropdown-enter');
+            
+            // Rotate chevron
+            const chevron = newButton.querySelector('.fa-chevron-down');
+            if (chevron) {
+                chevron.style.transform = 'rotate(180deg)';
+                console.log('🔄 Chevron rotated');
+            }
+        } else {
+            console.log('📁 Closing dropdown...');
+            responsibilityDropdown.classList.add('hidden');
+            responsibilityDropdown.classList.remove('dropdown-enter');
+            
+            // Reset chevron
+            const chevron = newButton.querySelector('.fa-chevron-down');
+            if (chevron) {
+                chevron.style.transform = 'rotate(0deg)';
+                console.log('🔄 Chevron reset');
+            }
+        }
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!newButton.contains(e.target) && !responsibilityDropdown.contains(e.target)) {
+            console.log('🖱️ Clicked outside dropdown, closing...');
+            responsibilityDropdown.classList.add('hidden');
+            responsibilityDropdown.classList.remove('dropdown-enter');
+            
+            // Reset chevron
+            const chevron = newButton.querySelector('.fa-chevron-down');
+            if (chevron) {
+                chevron.style.transform = 'rotate(0deg)';
+            }
+        }
+    });
+    
+    console.log('✅ Responsibility dropdown initialized successfully');
     
     // User dropdown functionality
     const userMenuButton = document.getElementById('userMenuButton');

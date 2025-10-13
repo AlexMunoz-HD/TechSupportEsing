@@ -101,50 +101,7 @@ class Dashboard {
             });
         }
 
-        // Responsibility dropdown button
-        const responsibilityDropdownButton = document.getElementById('responsibilityDropdownButton');
-        const responsibilityDropdown = document.getElementById('responsibilityDropdown');
-        
-        if (responsibilityDropdownButton && responsibilityDropdown) {
-            responsibilityDropdownButton.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const isHidden = responsibilityDropdown.classList.contains('hidden');
-                
-                if (isHidden) {
-                    responsibilityDropdown.classList.remove('hidden');
-                    responsibilityDropdown.classList.add('dropdown-enter');
-                    
-                    // Rotate chevron
-                    const chevron = responsibilityDropdownButton.querySelector('i');
-                    if (chevron) {
-                        chevron.style.transform = 'rotate(180deg)';
-                    }
-                } else {
-                    responsibilityDropdown.classList.add('hidden');
-                    responsibilityDropdown.classList.remove('dropdown-enter');
-                    
-                    // Reset chevron
-                    const chevron = responsibilityDropdownButton.querySelector('i');
-                    if (chevron) {
-                        chevron.style.transform = 'rotate(0deg)';
-                    }
-                }
-            });
-
-            // Close dropdown when clicking outside
-            document.addEventListener('click', (e) => {
-                if (!responsibilityDropdownButton.contains(e.target) && !responsibilityDropdown.contains(e.target)) {
-                    responsibilityDropdown.classList.add('hidden');
-                    responsibilityDropdown.classList.remove('dropdown-enter');
-                    
-                    // Reset chevron
-                    const chevron = responsibilityDropdownButton.querySelector('i');
-                    if (chevron) {
-                        chevron.style.transform = 'rotate(0deg)';
-                    }
-                }
-            });
-        }
+        // Responsibility dropdown is handled by app.js initializeDropdowns()
     }
 
     // Load dashboard data

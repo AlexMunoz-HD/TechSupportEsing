@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prueba del Buscador</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            padding: 20px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            display: none;
+        }
+        .test-section.active {
+            display: block;
+        }
+        .search-container {
+            margin: 20px 0;
+        }
+        .search-input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        .suggestions {
+            position: relative;
+            width: 100%;
+        }
+        .suggestion-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #ccc;
+            border-top: none;
+            border-radius: 0 0 5px 5px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+        }
+        .suggestion-item {
+            padding: 10px;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+        }
+        .suggestion-item:hover {
+            background-color: #f5f5f5;
+        }
+        .suggestion-item.selected {
+            background-color: #e3f2fd;
+        }
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Prueba del Sistema de Búsqueda</h1>
+    
+    <div class="search-container">
+        <input type="text" id="testSearch" class="search-input" placeholder="Escribe 'onboarding' para probar...">
+        <div class="suggestions">
+            <div id="testSuggestions" class="suggestion-dropdown hidden"></div>
+        </div>
+    </div>
+    
+    <div id="dashboard-section" class="test-section">
+        <h2>📊 Dashboard</h2>
+        <p>Esta es la sección del dashboard.</p>
+    </div>
+    
+    <div id="secure-onboarding-section" class="test-section">
+        <h2>👥 Onboarding</h2>
+        <p>Esta es la sección de onboarding.</p>
+    </div>
+    
+    <div id="offboarding-section" class="test-section">
+        <h2>👋 Offboarding</h2>
+        <p>Esta es la sección de offboarding.</p>
+    </div>
+    
+    <div id="users-section" class="test-section">
+        <h2>👤 Usuarios</h2>
+        <p>Esta es la sección de usuarios.</p>
+    </div>
+    
+    <div id="responsibility-section" class="test-section">
+        <h2>📄 Cartas de Responsabilidad</h2>
+        <p>Esta es la sección de cartas de responsabilidad.</p>
+    </div>
+    
+    <div id="audit-section" class="test-section">
+        <h2>📋 Auditoría</h2>
+        <p>Esta es la sección de auditoría.</p>
+    </div>
+
+    <script>
+        // Simple test implementation
+        class TestSearchManager {
+            constructor() {
+                this.searchInput = document.getElementById('testSearch');
+                this.suggestionsContainer = document.getElementById('testSuggestions');
+                this.currentSuggestions = [];
+                this.selectedIndex = -1;
+                this.isOpen = false;
+                
+                this.searchItems = [
+                    {
+                        title: 'Onboarding',
+                        description: 'Gestión de incorporación de empleados',
+                        icon: 'fas fa-user-plus',
+                        action: () => this.navigateToSection('secure-onboarding-section'),
+                        keywords: ['onboarding', 'incorporacion', 'empleados', 'nuevos']
+                    },
+                    {
+                        title: 'Offboarding',
+                        description: 'Gestión de desincorporación de empleados',
+                        icon: 'fas fa-user-minus',
+                        action: () => this.navigateToSection('offboarding-section'),
+                        keywords: ['offboarding', 'desincorporacion', 'salida', 'empleados']
+                    },
+                    {
+                        title: 'Dashboard',
+                        description: 'Panel principal con estadísticas',
+                        icon: 'fas fa-chart-pie',
+                        action: () => this.navigateToSection('dashboard-section'),
+                        keywords: ['dashboard', 'panel', 'estadisticas', 'principal']
+                    },
+                    {
+                        title: 'Usuarios',
+                        description: 'Gestión de usuarios del sistema',
+                        icon: 'fas fa-users',
+                        action: () => this.navigateToSection('users-section'),
+                        keywords: ['usuarios', 'users', 'gestion', 'sistema']
+                    },
+                    {
+                        title: 'Cartas de Responsabilidad',
+                        description: 'Gestión de cartas de responsabilidad',
+                        icon: 'fas fa-file-contract',
+                        action: () => this.navigateToSection('responsibility-section'),
+                        keywords: ['cartas', 'responsabilidad', 'letters', 'contratos']
+                    },
+                    {
+                        title: 'Auditoría',
+                        description: 'Registro de auditoría del sistema',
+                        icon: 'fas fa-clipboard-list',
+                        action: () => this.navigateToSection('audit-section'),
+                        keywords: ['auditoria', 'audit', 'registro', 'logs']
+                    }
+                ];
+                
+                this.init();
+            }
+            
+            init() {
+                this.searchInput.addEventListener('input', (e) => {
+                    this.handleInput(e.target.value);
+                });
+                
+                this.searchInput.addEventListener('focus', () => {
+                    if (this.searchInput.value.trim()) {
+                        this.showSuggestions();
+                    }
+                });
+                
+                this.searchInput.addEventListener('blur', () => {
+                    setTimeout(() => this.hideSuggestions(), 200);
+                });
+                
+                this.searchInput.addEventListener('keydown', (e) => {
+                    this.handleKeydown(e);
+                });
+            }
+            
+            handleInput(value) {
+                const query = value.toLowerCase().trim();
+                
+                if (query.length === 0) {
+                    this.hideSuggestions();
+                    return;
+                }
+                
+                this.currentSuggestions = this.searchItems.filter(item => {
+                    return item.title.toLowerCase().includes(query) ||
+                           item.description.toLowerCase().includes(query) ||
+                           item.keywords.some(keyword => keyword.includes(query));
+                });
+                
+                if (this.currentSuggestions.length > 0) {
+                    this.showSuggestions();
+                } else {
+                    this.hideSuggestions();
+                }
+            }
+            
+            showSuggestions() {
+                if (this.currentSuggestions.length === 0) {
+                    this.hideSuggestions();
+                    return;
+                }
+                
+                this.renderSuggestions();
+                this.suggestionsContainer.classList.remove('hidden');
+                this.isOpen = true;
+                this.selectedIndex = -1;
+            }
+            
+            hideSuggestions() {
+                this.suggestionsContainer.classList.add('hidden');
+                this.isOpen = false;
+                this.selectedIndex = -1;
+            }
+            
+            renderSuggestions() {
+                const suggestionsHTML = this.currentSuggestions.map((item, index) => `
+                    <div class="suggestion-item" data-index="${index}">
+                        <div style="font-weight: bold;">${item.title}</div>
+                        <div style="font-size: 0.9em; color: #666;">${item.description}</div>
+                    </div>
+                `).join('');
+                
+                this.suggestionsContainer.innerHTML = suggestionsHTML;
+                
+                this.suggestionsContainer.querySelectorAll('.suggestion-item').forEach((item, index) => {
+                    item.addEventListener('click', () => {
+                        this.selectSuggestion(index);
+                    });
+                    
+                    item.addEventListener('mouseenter', () => {
+                        this.selectedIndex = index;
+                        this.updateSelection();
+                    });
+                });
+            }
+            
+            handleKeydown(e) {
+                if (!this.isOpen) return;
+                
+                switch (e.key) {
+                    case 'ArrowDown':
+                        e.preventDefault();
+                        this.selectedIndex = Math.min(this.selectedIndex + 1, this.currentSuggestions.length - 1);
+                        this.updateSelection();
+                        break;
+                    
+                    case 'ArrowUp':
+                        e.preventDefault();
+                        this.selectedIndex = Math.max(this.selectedIndex - 1, -1);
+                        this.updateSelection();
+                        break;
+                    
+                    case 'Enter':
+                        e.preventDefault();
+                        if (this.selectedIndex >= 0) {
+                            this.selectSuggestion(this.selectedIndex);
+                        }
+                        break;
+                    
+                    case 'Escape':
+                        e.preventDefault();
+                        this.hideSuggestions();
+                        this.searchInput.blur();
+                        break;
+                }
+            }
+            
+            updateSelection() {
+                const items = this.suggestionsContainer.querySelectorAll('.suggestion-item');
+                
+                items.forEach((item, index) => {
+                    if (index === this.selectedIndex) {
+                        item.classList.add('selected');
+                    } else {
+                        item.classList.remove('selected');
+                    }
+                });
+            }
+            
+            selectSuggestion(index) {
+                if (index < 0 || index >= this.currentSuggestions.length) return;
+                
+                const selectedItem = this.currentSuggestions[index];
+                console.log('🎯 Selected suggestion:', selectedItem.title);
+                
+                this.searchInput.value = selectedItem.title;
+                this.hideSuggestions();
+                
+                console.log('🚀 Executing action for:', selectedItem.title);
+                selectedItem.action();
+                
+                setTimeout(() => {
+                    this.searchInput.value = '';
+                }, 100);
+            }
+            
+            navigateToSection(sectionId) {
+                console.log('🔍 Navigating to section:', sectionId);
+                
+                // Hide all sections
+                document.querySelectorAll('.test-section').forEach(section => {
+                    section.classList.remove('active');
+                });
+                
+                // Show selected section
+                const targetSection = document.getElementById(sectionId);
+                if (targetSection) {
+                    targetSection.classList.add('active');
+                    console.log('✅ Section shown:', sectionId);
+                } else {
+                    console.error('❌ Section not found:', sectionId);
+                }
+            }
+        }
+        
+        // Initialize when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            new TestSearchManager();
+        });
+    </script>
+</body>
+</html>
