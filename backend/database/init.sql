@@ -1,6 +1,11 @@
 -- TechSupport Database Schema
 -- Initialize database with users and audit_log tables
 
+-- Set charset to UTF-8 for the entire database
+SET NAMES utf8mb4;
+SET CHARACTER SET utf8mb4;
+SET character_set_connection=utf8mb4;
+
 USE techsupport_db;
 
 -- Users table for authentication and roles
@@ -15,7 +20,7 @@ CREATE TABLE IF NOT EXISTS users (
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Audit log table for tracking all system activities
 CREATE TABLE IF NOT EXISTS audit_log (
@@ -34,7 +39,7 @@ CREATE TABLE IF NOT EXISTS audit_log (
     INDEX idx_action (action),
     INDEX idx_created_at (created_at),
     INDEX idx_location (location)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Assets table for Snipe-IT integration
 CREATE TABLE IF NOT EXISTS assets (

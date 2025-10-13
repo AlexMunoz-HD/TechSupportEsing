@@ -36,47 +36,19 @@ class EmployeesManager {
                 this.renderNewHires();
             } else {
                 console.error('Error loading new hires:', data.error);
-                // Load demo data when API fails
-                this.loadDemoNewHires();
+                // Load empty state when API fails
+                this.showEmptyState();
             }
         } catch (error) {
             console.error('Error loading new hires:', error);
-            // Load demo data when connection fails
-            this.loadDemoNewHires();
+            // Load empty state when connection fails
+            this.showEmptyState();
         }
     }
 
-    // Load demo new hires data
-    loadDemoNewHires() {
-        this.newHires = [
-            {
-                id: 1,
-                full_name: 'María González',
-                position: 'Desarrolladora Frontend',
-                department: 'IT',
-                location: 'MX',
-                start_date: new Date(Date.now() - 86400000).toISOString(),
-                email: 'maria.gonzalez@empresa.com'
-            },
-            {
-                id: 2,
-                full_name: 'Carlos Rodríguez',
-                position: 'Analista de Datos',
-                department: 'Analytics',
-                location: 'CL',
-                start_date: new Date(Date.now() - 172800000).toISOString(),
-                email: 'carlos.rodriguez@empresa.com'
-            },
-            {
-                id: 3,
-                full_name: 'Ana Martínez',
-                position: 'Diseñadora UX',
-                department: 'Design',
-                location: 'REMOTO',
-                start_date: new Date(Date.now() - 259200000).toISOString(),
-                email: 'ana.martinez@empresa.com'
-            }
-        ];
+    // Show empty state when no data is available
+    showEmptyState() {
+        this.newHires = [];
         this.renderNewHires();
     }
 

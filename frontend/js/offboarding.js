@@ -90,7 +90,7 @@ class OffboardingManager {
             this.updateStats();
         } catch (error) {
             console.error('Error loading offboarding processes:', error);
-            // Fallback to demo data so the UI is not blank
+            // Fallback to empty state so the UI is not blank
             this.processes = [
                 {
                     id: 1,
@@ -131,7 +131,7 @@ class OffboardingManager {
             ];
             this.applyFilters();
             this.updateStats();
-            showNotification('info', 'Modo demo', 'Mostrando procesos de offboarding de ejemplo');
+            // Show empty state notification
         }
     }
 

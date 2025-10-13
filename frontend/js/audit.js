@@ -96,7 +96,7 @@ class AuditManager {
         if (this.logs.length === 0) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="6" class="px-6 py-4 text-center text-gray-500">
+                    <td colspan="7" class="px-6 py-4 text-center text-gray-500">
                         No se encontraron registros de auditoría
                     </td>
                 </tr>
@@ -130,6 +130,12 @@ class AuditManager {
                 </td>
                 <td class="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
                     ${details}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <button onclick="viewAuditDetails(${log.id})" 
+                            class="text-blue-600 hover:text-blue-900 transition-colors duration-200">
+                        <i class="fas fa-eye"></i>
+                    </button>
                 </td>
             `;
             
@@ -324,6 +330,67 @@ class AuditManager {
         // This could be used to show statistics in a separate section
         console.log('Audit statistics:', stats);
     }
+
+    // View audit details
+    viewAuditDetails(logId) {
+        const log = this.logs.find(l => l.id === logId);
+        if (!log) {
+            console.error('Log not found:', logId);
+            return;
+        }
+
+        // Create modal content
+        const modalContent = `
+            <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" id="auditDetailsModal">
+                <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+                    <div class="mt-3">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-medium text-gray-900">Detalles de Auditoría</h3>
+                            <button onclick="closeAuditDetailsModal()" class="text-gray-400 hover:text-gray-600">
+                                <i class="fas fa-times text-xl"></i>
+                            </button>
+                        </div>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Fecha y Hora</label>
+                                <p class="mt-1 text-sm text-gray-900">${new Date(log.created_at).toLocaleString()}</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Acción</label>
+                                <p class="mt-1 text-sm text-gray-900">${log.action.replace(/_/g, ' ')}</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Usuario</label>
+                                <p class="mt-1 text-sm text-gray-900">${log.full_name || 'Sistema'}</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Recurso</label>
+                                <p class="mt-1 text-sm text-gray-900">${log.resource_type} ${log.resource_id ? `(${log.resource_id})` : ''}</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Ubicación</label>
+                                <p class="mt-1 text-sm text-gray-900">${log.location}</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Detalles Completos</label>
+                                <div class="mt-1 p-3 bg-gray-50 rounded-md">
+                                    <pre class="text-sm text-gray-900 whitespace-pre-wrap">${log.details ? JSON.stringify(JSON.parse(log.details), null, 2) : 'Sin detalles adicionales'}</pre>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-6 flex justify-end">
+                            <button onclick="closeAuditDetailsModal()" class="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 transition duration-200">
+                                Cerrar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Add modal to body
+        document.body.insertAdjacentHTML('beforeend', modalContent);
+    }
 }
 
 // Global function to export audit logs
@@ -343,3 +410,22 @@ function loadAuditLogs() {
 
 // Global function for export audit logs
 window.exportAuditLogs = exportAuditLogs;
+
+// Global function to view audit details
+function viewAuditDetails(logId) {
+    if (window.auditManager) {
+        window.auditManager.viewAuditDetails(logId);
+    }
+}
+
+// Global function to close audit details modal
+function closeAuditDetailsModal() {
+    const modal = document.getElementById('auditDetailsModal');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+// Make functions globally available
+window.viewAuditDetails = viewAuditDetails;
+window.closeAuditDetailsModal = closeAuditDetailsModal;

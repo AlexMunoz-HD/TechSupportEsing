@@ -36,6 +36,7 @@ class TechSupportApp {
     // Initialize default section
     initializeDefaultSection() {
         if (auth.isAuthenticated()) {
+            console.log('🔍 Initializing default section: dashboard-section');
             this.showSection('dashboard-section');
         }
     }
@@ -1656,11 +1657,17 @@ function initializeDropdowns() {
     console.log('Responsibility dropdown:', responsibilityDropdown);
     
     if (responsibilityDropdownButton && responsibilityDropdown) {
+        console.log('✅ Responsibility dropdown elements found, adding event listener...');
+        
         responsibilityDropdownButton.addEventListener('click', (e) => {
+            console.log('🖱️ Responsibility dropdown button clicked!');
             e.stopPropagation();
             const isHidden = responsibilityDropdown.classList.contains('hidden');
             
+            console.log('Dropdown is hidden:', isHidden);
+            
             if (isHidden) {
+                console.log('📂 Opening dropdown...');
                 responsibilityDropdown.classList.remove('hidden');
                 responsibilityDropdown.classList.add('dropdown-enter');
                 
@@ -1668,8 +1675,10 @@ function initializeDropdowns() {
                 const chevron = responsibilityDropdownButton.querySelector('i');
                 if (chevron) {
                     chevron.style.transform = 'rotate(180deg)';
+                    console.log('🔄 Chevron rotated');
                 }
             } else {
+                console.log('📁 Closing dropdown...');
                 responsibilityDropdown.classList.add('hidden');
                 responsibilityDropdown.classList.remove('dropdown-enter');
                 
@@ -1677,6 +1686,7 @@ function initializeDropdowns() {
                 const chevron = responsibilityDropdownButton.querySelector('i');
                 if (chevron) {
                     chevron.style.transform = 'rotate(0deg)';
+                    console.log('🔄 Chevron reset');
                 }
             }
         });
@@ -1684,6 +1694,7 @@ function initializeDropdowns() {
         // Close dropdown when clicking outside
         document.addEventListener('click', (e) => {
             if (!responsibilityDropdownButton.contains(e.target) && !responsibilityDropdown.contains(e.target)) {
+                console.log('🖱️ Clicked outside dropdown, closing...');
                 responsibilityDropdown.classList.add('hidden');
                 responsibilityDropdown.classList.remove('dropdown-enter');
                 
@@ -1691,6 +1702,7 @@ function initializeDropdowns() {
                 const chevron = responsibilityDropdownButton.querySelector('i');
                 if (chevron) {
                     chevron.style.transform = 'rotate(0deg)';
+                    console.log('🔄 Chevron reset from outside click');
                 }
             }
         });
@@ -1710,6 +1722,37 @@ function initializeDropdowns() {
     }
     
     console.log('🔽 Dropdown initialization complete');
+    
+    // Test function for responsibility dropdown
+    window.testResponsibilityDropdown = function() {
+        console.log('🧪 Testing responsibility dropdown...');
+        
+        const button = document.getElementById('responsibilityDropdownButton');
+        const dropdown = document.getElementById('responsibilityDropdown');
+        
+        console.log('Button element:', button);
+        console.log('Dropdown element:', dropdown);
+        
+        if (button && dropdown) {
+            console.log('✅ Elements found, simulating click...');
+            button.click();
+            
+            setTimeout(() => {
+                const isVisible = !dropdown.classList.contains('hidden');
+                console.log('Dropdown visible after click:', isVisible);
+                
+                if (isVisible) {
+                    console.log('✅ Dropdown opened successfully!');
+                } else {
+                    console.log('❌ Dropdown failed to open');
+                }
+            }, 100);
+        } else {
+            console.log('❌ Elements not found');
+        }
+    };
+    
+    console.log('🧪 Test function available: window.testResponsibilityDropdown()');
 }
 
 // Handle unhandled promise rejections

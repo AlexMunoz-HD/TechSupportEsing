@@ -92,7 +92,7 @@ class ResponsibilityManager {
             console.log('=== RESPONSIBILITY LOAD LETTERS END (OK) ===');
         } catch (error) {
             console.error('Error loading letters:', error);
-            // Fallback: demo letters so the page is not blank
+            // Fallback: empty state so the page is not blank
             this.letters = [
                 {
                     id: 1,
@@ -134,7 +134,7 @@ class ResponsibilityManager {
             this.applyFilters();
             this.updateStats();
             this.ensureSectionVisibility();
-            showNotification('info', 'Modo demo', 'Mostrando cartas de responsabilidad de ejemplo');
+            // Show empty state notification
         }
     }
 

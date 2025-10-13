@@ -13,8 +13,8 @@ class SecureOnboardingProxy {
     constructor() {
         // Endpoints del backend proxy seguro (NO credenciales aquí)
         this.endpoints = {
-            usuariosConActivos: 'https://mi.backend.seguro/api/usuarios-con-activos',
-            dispararESign: 'https://mi.backend.seguro/api/disparar-esign'
+            usuariosConActivos: 'http://localhost:3001/api/users',
+            dispararESign: 'http://localhost:3001/api/disparar-esign'
         };
         
         this.usuarios = [];
@@ -90,8 +90,8 @@ class SecureOnboardingProxy {
             this.showNotification('error', 'Error de Conexión', 
                 'No se pudieron cargar los usuarios. Verifique la conexión con el proxy backend.');
             
-            // Cargar datos demo como fallback
-            this.cargarUsuariosDemo();
+            // Cargar estado vacío como fallback
+            this.mostrarEstadoVacio();
         }
     }
 
@@ -323,65 +323,13 @@ class SecureOnboardingProxy {
     }
 
     /**
-     * DATOS DEMO COMO FALLBACK
-     * 
-     * En caso de que el proxy backend no esté disponible,
-     * se cargan datos demo para desarrollo y testing.
+     * Mostrar estado vacío cuando no hay datos disponibles
      */
-    cargarUsuariosDemo() {
-        console.log('📋 Cargando datos demo como fallback...');
+    mostrarEstadoVacio() {
+        console.log('📋 Mostrando estado vacío...');
         
-        this.usuarios = [
-            {
-                id: 'demo-1',
-                userId: 'demo-1',
-                nombre: 'Ana García',
-                full_name: 'Ana García',
-                email: 'ana.garcia@empresa.com',
-                posicion: 'Desarrolladora Senior',
-                position: 'Desarrolladora Senior',
-                departamento: 'Tecnología',
-                department: 'Tecnología',
-                ubicacion: 'Madrid',
-                location: 'Madrid',
-                activos_asignados: 3,
-                estado_documento: 'pendiente'
-            },
-            {
-                id: 'demo-2',
-                userId: 'demo-2',
-                nombre: 'Carlos López',
-                full_name: 'Carlos López',
-                email: 'carlos.lopez@empresa.com',
-                posicion: 'DevOps Engineer',
-                position: 'DevOps Engineer',
-                departamento: 'Infraestructura',
-                department: 'Infraestructura',
-                ubicacion: 'Barcelona',
-                location: 'Barcelona',
-                activos_asignados: 2,
-                estado_documento: 'enviado'
-            },
-            {
-                id: 'demo-3',
-                userId: 'demo-3',
-                nombre: 'María Rodríguez',
-                full_name: 'María Rodríguez',
-                email: 'maria.rodriguez@empresa.com',
-                posicion: 'Product Manager',
-                position: 'Product Manager',
-                departamento: 'Producto',
-                department: 'Producto',
-                ubicacion: 'Valencia',
-                location: 'Valencia',
-                activos_asignados: 1,
-                estado_documento: 'firmado'
-            }
-        ];
-
+        this.usuarios = [];
         this.renderizarTablaUsuarios();
-        this.showNotification('info', 'Modo Demo', 
-            'Se están mostrando datos demo. Configure el proxy backend para datos reales.');
     }
 }
 

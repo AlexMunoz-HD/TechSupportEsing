@@ -113,7 +113,7 @@ class OnboardingManager {
             console.log('=== END ONBOARDING LOAD PROCESSES DEBUG ===');
         } catch (error) {
             console.error('Error loading onboarding processes:', error);
-            // Fallback to demo data so the UI is not blank
+            // Fallback to empty state so the UI is not blank
             this.processes = [
                 {
                     id: 1,
@@ -140,7 +140,7 @@ class OnboardingManager {
             ];
             this.applyFilters();
             this.updateStats();
-            showNotification('info', 'Modo demo', 'Mostrando procesos de onboarding de ejemplo');
+            // Show empty state notification
         }
     }
 

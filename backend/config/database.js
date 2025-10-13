@@ -7,6 +7,8 @@ const dbConfig = {
   user: process.env.DB_USER || 'techsupport_user',
   password: process.env.DB_PASSWORD || 'techsupport_pass',
   database: process.env.DB_NAME || 'techsupport_db',
+  charset: 'utf8mb4',
+  collation: 'utf8mb4_unicode_ci',
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,

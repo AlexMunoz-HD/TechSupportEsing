@@ -201,13 +201,13 @@ class Dashboard {
                 }
             } else {
                 console.error('Dashboard API error:', data);
-                // Show demo data when API fails
-                this.loadDemoData();
+                // Show empty state when API fails
+                this.showEmptyState();
             }
         } catch (error) {
             console.error('Error loading dashboard data:', error);
-            // Show demo data when connection fails
-            this.loadDemoData();
+            // Show empty state when connection fails
+            this.showEmptyState();
             console.error('Error details:', error.message);
             console.error('Error stack:', error.stack);
         }
@@ -292,43 +292,7 @@ class Dashboard {
         this.updateRecentAssignments(demoData.activeAssignments);
         this.updateAlerts(demoData.alerts);
 
-        // Show demo indicator
-        this.showDemoIndicator();
-    }
-
-    // Show demo data indicator
-    showDemoIndicator() {
-        const dashboardSection = document.getElementById('dashboard-section');
-        if (dashboardSection) {
-            // Remove existing demo indicator
-            const existingIndicator = document.getElementById('demoIndicator');
-            if (existingIndicator) {
-                existingIndicator.remove();
-            }
-
-            // Create demo indicator
-            const demoIndicator = document.createElement('div');
-            demoIndicator.id = 'demoIndicator';
-            demoIndicator.className = 'bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6';
-            demoIndicator.innerHTML = `
-                <div class="flex">
-                    <div class="flex-shrink-0">
-                        <i class="fas fa-info-circle text-yellow-400"></i>
-                    </div>
-                    <div class="ml-3">
-                        <p class="text-sm text-yellow-700">
-                            <strong>Modo Demo:</strong> Se están mostrando datos de demostración. Los datos reales aparecerán cuando se conecte al servidor.
-                        </p>
-                    </div>
-                </div>
-            `;
-
-            // Insert at the beginning of dashboard section
-            const firstChild = dashboardSection.firstElementChild;
-            if (firstChild) {
-                dashboardSection.insertBefore(demoIndicator, firstChild);
-            }
-        }
+        // Demo data loaded
     }
 
     // Update statistics cards

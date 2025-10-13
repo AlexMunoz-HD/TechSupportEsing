@@ -151,27 +151,40 @@ document.addEventListener('DOMContentLoaded', function() {
             const password = document.getElementById('password').value;
 
             // Show loading state
-            loginButton.textContent = 'Logging in...';
+            loginButton.innerHTML = `
+                <div class="flex items-center justify-center">
+                    <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                    Iniciando sesión...
+                </div>
+            `;
             loginSpinner.classList.remove('hidden');
             loginError.classList.add('hidden');
 
             try {
+                console.log('🔐 Attempting login...');
                 await auth.login(email, password);
+                console.log('✅ Login successful, showing animation...');
                 
-                // Hide login screen and show dashboard
-                document.getElementById('loginScreen').classList.add('hidden');
-                document.getElementById('dashboard').classList.remove('hidden');
-                
-                // Initialize dashboard
-                initializeDashboard();
+                // Show success animation
+                showLoginSuccessAnimation();
                 
             } catch (error) {
                 // Show error
-                loginError.textContent = error.message;
+                const loginErrorText = document.getElementById('loginErrorText');
+                if (loginErrorText) {
+                    loginErrorText.textContent = error.message;
+                } else {
+                    loginError.textContent = error.message;
+                }
                 loginError.classList.remove('hidden');
                 
                 // Reset button state
-                loginButton.textContent = 'Login';
+                loginButton.innerHTML = `
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path>
+                    </svg>
+                    Iniciar Sesión
+                `;
                 loginSpinner.classList.add('hidden');
             }
         });
@@ -182,16 +195,53 @@ document.addEventListener('DOMContentLoaded', function() {
 async function logout() {
     try {
         await auth.logout();
+        
+        // Reset login form and button state
+        resetLoginForm();
+        
         // Show login screen and hide dashboard
         document.getElementById('loginScreen').classList.remove('hidden');
         document.getElementById('dashboard').classList.add('hidden');
         
         // Clear any active notifications
         clearNotifications();
+        
+        console.log('✅ Logout successful, login form reset');
     } catch (error) {
         console.error('Logout error:', error);
         // Force reload even if API call fails
         window.location.reload();
+    }
+}
+
+// Reset login form to initial state
+function resetLoginForm() {
+    const loginForm = document.getElementById('loginForm');
+    const loginButton = document.getElementById('loginButtonText');
+    const loginSpinner = document.getElementById('loginSpinner');
+    const loginError = document.getElementById('loginError');
+    
+    if (loginForm) {
+        // Clear form fields
+        const emailField = document.getElementById('email');
+        const passwordField = document.getElementById('password');
+        
+        if (emailField) emailField.value = '';
+        if (passwordField) passwordField.value = '';
+        
+        // Reset button to initial state
+        if (loginButton) {
+            loginButton.innerHTML = `
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path>
+                </svg>
+                Iniciar Sesión
+            `;
+        }
+        
+        // Hide spinner and error
+        if (loginSpinner) loginSpinner.classList.add('hidden');
+        if (loginError) loginError.classList.add('hidden');
     }
 }
 
@@ -219,25 +269,48 @@ async function changePassword() {
 
 // Initialize app based on authentication status
 function initializeApp() {
+    console.log('🔍 Checking authentication status...');
+    
     if (auth.isAuthenticated()) {
+        console.log('✅ User is authenticated, redirecting to dashboard...');
+        
         // User is logged in, show dashboard
         document.getElementById('loadingScreen').classList.add('hidden');
         document.getElementById('loginScreen').classList.add('hidden');
         document.getElementById('dashboard').classList.remove('hidden');
+        
+        // CRITICAL: Show the dashboard-section
+        const dashboardSection = document.getElementById('dashboard-section');
+        if (dashboardSection) {
+            dashboardSection.classList.remove('hidden');
+            dashboardSection.style.display = 'block';
+            console.log('✅ Dashboard section visible');
+        } else {
+            console.error('❌ Dashboard section not found!');
+        }
         
         // Update user info in header
         updateUserInfo();
         
         // Initialize dashboard after a short delay to ensure auth is ready
         setTimeout(() => {
-            console.log('Initializing dashboard after auth is ready...');
+            console.log('🚀 Initializing dashboard for authenticated user...');
             initializeDashboard();
         }, 100);
+        
+        console.log('✅ Successfully redirected authenticated user to dashboard');
     } else {
+        console.log('❌ User is not authenticated, showing login screen...');
+        
         // User is not logged in, show login screen
         document.getElementById('loadingScreen').classList.add('hidden');
         document.getElementById('loginScreen').classList.remove('hidden');
         document.getElementById('dashboard').classList.add('hidden');
+        
+        // Reset login form to ensure clean state
+        resetLoginForm();
+        
+        console.log('✅ Login screen displayed');
     }
 }
 
@@ -289,3 +362,43 @@ document.addEventListener('DOMContentLoaded', function() {
         initializeApp();
     }, 1000);
 });
+
+// Show login success animation
+function showLoginSuccessAnimation() {
+    const animation = document.getElementById('loginSuccessAnimation');
+    if (!animation) return;
+    
+    // Show animation
+    animation.classList.add('show');
+    
+    // After animation completes, redirect to dashboard
+    setTimeout(() => {
+        // Hide login screen and show dashboard
+        document.getElementById('loginScreen').classList.add('hidden');
+        document.getElementById('dashboard').classList.remove('hidden');
+        
+        // CRITICAL: Show the dashboard-section immediately
+        const dashboardSection = document.getElementById('dashboard-section');
+        if (dashboardSection) {
+            dashboardSection.classList.remove('hidden');
+            dashboardSection.style.display = 'block';
+            console.log('✅ Dashboard section made visible');
+        }
+        
+        // Update user info in header
+        updateUserInfo();
+        
+        // Initialize dashboard after a short delay to ensure auth is ready
+        setTimeout(() => {
+            console.log('🚀 Initializing dashboard after successful login...');
+            initializeDashboard();
+        }, 100);
+        
+        // Hide animation after dashboard is ready
+        setTimeout(() => {
+            animation.classList.remove('show');
+            console.log('✅ Successfully redirected to dashboard');
+        }, 500);
+        
+    }, 1500); // Show animation for 1.5 seconds
+}
