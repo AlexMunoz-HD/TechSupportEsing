@@ -76,7 +76,6 @@ class ResponsibilityManager {
     // Load letters data
     async loadLetters() {
         try {
-            console.log('=== RESPONSIBILITY LOAD LETTERS START ===');
             const response = await auth.apiRequest(`${this.apiBase}/responsibility-letters`);
             
             if (!response.ok) {
@@ -89,7 +88,6 @@ class ResponsibilityManager {
             this.applyFilters();
             this.updateStats();
             this.ensureSectionVisibility();
-            console.log('=== RESPONSIBILITY LOAD LETTERS END (OK) ===');
         } catch (error) {
             console.error('Error loading letters:', error);
             // Fallback: empty state so the page is not blank

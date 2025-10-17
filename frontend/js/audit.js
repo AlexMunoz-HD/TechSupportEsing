@@ -70,6 +70,19 @@ class AuditManager {
             });
 
             const response = await auth.apiRequest(`/audit?${params.toString()}`);
+            
+            if (response.status === 401) {
+                // User not authenticated
+                this.renderAuthenticationError();
+                return;
+            }
+            
+            if (response.status === 403) {
+                // User doesn't have auditor permissions
+                this.renderPermissionError();
+                return;
+            }
+            
             const data = await response.json();
 
             if (response.ok) {
@@ -80,9 +93,11 @@ class AuditManager {
                 this.renderPagination();
             } else {
                 console.error('Error loading audit logs:', data.error);
+                this.renderError(data.error || 'Error al cargar los registros de auditoría');
             }
         } catch (error) {
             console.error('Error loading audit logs:', error);
+            this.renderError('Error de conexión al cargar los registros de auditoría');
         }
     }
 
@@ -141,6 +156,78 @@ class AuditManager {
             
             tbody.appendChild(row);
         });
+    }
+
+    // Render authentication error
+    renderAuthenticationError() {
+        const tbody = document.getElementById('auditTableBody');
+        if (!tbody) return;
+
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" class="px-6 py-8 text-center">
+                    <div class="flex flex-col items-center space-y-4">
+                        <i class="fas fa-lock text-4xl text-red-500"></i>
+                        <div class="text-center">
+                            <h3 class="text-lg font-medium text-gray-900 mb-2">Acceso Requerido</h3>
+                            <p class="text-gray-600 mb-4">Necesitas iniciar sesión para ver los registros de auditoría.</p>
+                            <button onclick="showSection('auth-section')" 
+                                    class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition duration-200">
+                                <i class="fas fa-sign-in-alt mr-2"></i>Iniciar Sesión
+                            </button>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }
+
+    // Render permission error
+    renderPermissionError() {
+        const tbody = document.getElementById('auditTableBody');
+        if (!tbody) return;
+
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" class="px-6 py-8 text-center">
+                    <div class="flex flex-col items-center space-y-4">
+                        <i class="fas fa-user-shield text-4xl text-orange-500"></i>
+                        <div class="text-center">
+                            <h3 class="text-lg font-medium text-gray-900 mb-2">Permisos Insuficientes</h3>
+                            <p class="text-gray-600 mb-4">Tu usuario no tiene permisos de auditor para ver estos registros.</p>
+                            <button onclick="showSection('dashboard-section')" 
+                                    class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 transition duration-200">
+                                <i class="fas fa-arrow-left mr-2"></i>Volver al Dashboard
+                            </button>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }
+
+    // Render general error
+    renderError(message) {
+        const tbody = document.getElementById('auditTableBody');
+        if (!tbody) return;
+
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" class="px-6 py-8 text-center">
+                    <div class="flex flex-col items-center space-y-4">
+                        <i class="fas fa-exclamation-triangle text-4xl text-yellow-500"></i>
+                        <div class="text-center">
+                            <h3 class="text-lg font-medium text-gray-900 mb-2">Error al Cargar Datos</h3>
+                            <p class="text-gray-600 mb-4">${message}</p>
+                            <button onclick="window.auditManager.loadAuditLogs()" 
+                                    class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition duration-200">
+                                <i class="fas fa-refresh mr-2"></i>Reintentar
+                            </button>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        `;
     }
 
     // Render pagination

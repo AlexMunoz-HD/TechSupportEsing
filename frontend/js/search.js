@@ -227,7 +227,6 @@ class SearchManager {
         this.hideSuggestions();
         
         // Execute the action
-        console.log('🚀 Executing action for:', selectedItem.title);
         selectedItem.action();
         
         // Clear the search input after navigation
@@ -237,13 +236,11 @@ class SearchManager {
     }
 
     navigateToSection(sectionId) {
-        console.log('🔍 Attempting to navigate to section:', sectionId);
         
         // First, try to use the global showSection function
         if (typeof window.showSection === 'function') {
             try {
                 window.showSection(sectionId);
-                console.log('✅ Navigation successful via window.showSection');
                 return;
             } catch (error) {
                 console.warn('⚠️ window.showSection failed:', error);
@@ -256,7 +253,6 @@ class SearchManager {
     }
 
     fallbackNavigation(sectionId) {
-        console.log('🔧 Executing fallback navigation for:', sectionId);
         
         // Hide all sections
         document.querySelectorAll('.section').forEach(section => {
@@ -271,7 +267,6 @@ class SearchManager {
             targetSection.style.display = 'block';
             targetSection.style.visibility = 'visible';
             targetSection.style.opacity = '1';
-            console.log('✅ Section shown:', sectionId);
             
             // Update navigation state
             this.updateNavigationState(sectionId);

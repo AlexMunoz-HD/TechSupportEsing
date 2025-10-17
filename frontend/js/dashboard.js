@@ -107,7 +107,6 @@ class Dashboard {
     // Load dashboard data
     async loadDashboardData() {
         try {
-            console.log('=== LOAD DASHBOARD DATA DEBUG ===');
             console.log('Auth object:', window.auth);
             console.log('Auth user:', window.auth?.user);
             console.log('Auth token:', window.auth?.token);
@@ -127,6 +126,12 @@ class Dashboard {
             console.log('API response received:', response);
             console.log('Response status:', response.status);
             console.log('Response ok:', response.ok);
+            
+            if (response.status === 429) {
+                // Rate limited - wait and retry
+                await this.handleRateLimit();
+                return;
+            }
             
             const data = await response.json();
             console.log('Parsed response data:', data);
@@ -167,6 +172,54 @@ class Dashboard {
             this.showEmptyState();
             console.error('Error details:', error.message);
             console.error('Error stack:', error.stack);
+        }
+    }
+
+    // Handle rate limiting with exponential backoff
+    async handleRateLimit() {
+        const retryCount = this.retryCount || 0;
+        const maxRetries = 3;
+        
+        if (retryCount >= maxRetries) {
+            this.showEmptyState();
+            return;
+        }
+        
+        this.retryCount = retryCount + 1;
+        const delay = Math.pow(2, retryCount) * 1000; // Exponential backoff: 2s, 4s, 8s
+        
+        
+        setTimeout(() => {
+            this.loadDashboardData();
+        }, delay);
+    }
+
+    // Show empty state when data cannot be loaded
+    showEmptyState() {
+        
+        // Hide loading states
+        const loadingElements = document.querySelectorAll('.loading-skeleton');
+        loadingElements.forEach(el => el.style.display = 'none');
+        
+        // Show empty state message
+        const dashboardContent = document.querySelector('#dashboard-section .max-w-7xl');
+        if (dashboardContent) {
+            const emptyStateHTML = `
+                <div class="text-center py-12">
+                    <div class="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                        <i class="fas fa-chart-line text-3xl text-gray-400"></i>
+                    </div>
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">No se pudieron cargar los datos</h3>
+                    <p class="text-gray-600 mb-4">Hay un problema temporal con el servidor. Por favor, intenta de nuevo.</p>
+                    <button onclick="window.dashboardManager.loadDashboardData()" 
+                            class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition duration-200">
+                        <i class="fas fa-refresh mr-2"></i>Reintentar
+                    </button>
+                </div>
+            `;
+            
+            // Replace content with empty state
+            dashboardContent.innerHTML = emptyStateHTML;
         }
     }
 
@@ -254,7 +307,6 @@ class Dashboard {
 
     // Update statistics cards
     updateStats(data) {
-        console.log('=== UPDATE STATS DEBUG ===');
         console.log('Data received:', data);
         console.log('Data type:', typeof data);
         
@@ -320,7 +372,6 @@ class Dashboard {
             console.error('todayActivity element not found!');
         }
         
-        console.log('=== END UPDATE STATS DEBUG ===');
     }
 
     // Update charts
@@ -792,7 +843,6 @@ function clearNotifications() {
 
 // Initialize dashboard
 function initializeDashboard() {
-    console.log('=== INITIALIZE DASHBOARD DEBUG ===');
     console.log('Current window.dashboardManager:', window.dashboardManager);
     console.log('Auth object:', window.auth);
     console.log('Auth user:', window.auth?.user);
@@ -808,7 +858,6 @@ function initializeDashboard() {
         waitForAuthAndLoadData();
     }
     
-    console.log('=== END INITIALIZE DASHBOARD DEBUG ===');
 }
 
 // Wait for auth to be ready and then load dashboard data

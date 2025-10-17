@@ -22,19 +22,19 @@ router.post('/login', async (req, res) => {
     );
 
     if (users.length === 0) {
-      return res.status(401).json({ error: 'Invalid credentials' });
+      return res.status(401).json({ error: 'Ups, creo que los datos ingresados no son correctos, inténtalos nuevamente' });
     }
 
     const user = users[0];
 
     if (!user.is_active) {
-      return res.status(401).json({ error: 'Account is deactivated' });
+      return res.status(401).json({ error: 'Tu cuenta está desactivada. Contacta al administrador.' });
     }
 
     // Verify password
     const isValidPassword = await bcrypt.compare(password, user.password_hash);
     if (!isValidPassword) {
-      return res.status(401).json({ error: 'Invalid credentials' });
+      return res.status(401).json({ error: 'Ups, creo que los datos ingresados no son correctos, inténtalos nuevamente' });
     }
 
     // Generate JWT token

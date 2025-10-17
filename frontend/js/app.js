@@ -36,7 +36,6 @@ class TechSupportApp {
     // Initialize default section
     initializeDefaultSection() {
         if (auth.isAuthenticated()) {
-            console.log('🔍 Initializing default section: dashboard-section');
             this.showSection('dashboard-section');
         }
     }
@@ -199,9 +198,7 @@ class TechSupportApp {
             this.currentSection = sectionId;
             
             // Fix section position if it's inside dashboard-container
-            console.log('🔍 Checking section:', sectionId);
             if (sectionId === 'dashboard-section') {
-                console.log('🔧 Initializing dashboard');
                 // Initialize dashboard when showing dashboard section
                 setTimeout(() => {
                     if (typeof initializeDashboard === 'function') {
@@ -210,21 +207,16 @@ class TechSupportApp {
                         window.dashboardManager.loadDashboardData();
                     } else {
                         // Fallback: load demo data if dashboard manager is not available
-                        console.log('📊 Dashboard manager not available, loading demo data...');
                         loadDashboardDemoData();
                     }
                 }, 100);
             } else if (sectionId === 'audit-section') {
-                console.log('🔧 Calling fixAuditSectionPosition');
                 this.fixAuditSectionPosition(targetSection);
             } else if (sectionId === 'onboarding-section') {
-                console.log('🔧 Calling fixOnboardingSectionPosition');
                 this.fixOnboardingSectionPosition(targetSection);
             } else if (sectionId === 'offboarding-section') {
-                console.log('🔧 Calling fixOffboardingSectionPosition');
                 this.fixOffboardingSectionPosition(targetSection);
             } else if (sectionId === 'profile-section') {
-                console.log('🔧 Creating profile overlay');
                 createProfileOverlay();
             }
         }
@@ -259,7 +251,6 @@ class TechSupportApp {
 
     // Global function to load responsibility letters
     loadResponsibilityLetters() {
-        console.log('=== LOAD RESPONSIBILITY LETTERS GLOBAL ===');
         console.log('Current section before:', this.currentSection);
         
         // Ensure section is visible first
@@ -317,11 +308,6 @@ class TechSupportApp {
                     rect.left + rect.width / 2, 
                     rect.top + rect.height / 2
                 );
-                console.log('Elements at section center:', elementsAtCenter.map(el => ({
-                    tagName: el.tagName,
-                    id: el.id,
-                    className: el.className
-                })));
             }, 100);
         } else {
             console.error('Responsibility section NOT FOUND in DOM!');
@@ -342,7 +328,6 @@ class TechSupportApp {
             }
         }
         console.log('Current section after:', this.currentSection);
-        console.log('=== END LOAD RESPONSIBILITY LETTERS GLOBAL ===');
     }
 
     // Load section-specific data
@@ -361,7 +346,6 @@ class TechSupportApp {
                 }
                 break;
             case 'responsibility-section':
-                console.log('=== LOADING RESPONSIBILITY SECTION DEBUG ===');
                 
                 // Force responsibility section visibility
                 const responsibilitySection = document.getElementById('responsibility-section');
@@ -375,7 +359,6 @@ class TechSupportApp {
                 
                 // Don't load data here - let the onclick handler do it
                 console.log('Responsibility section visibility set, data loading handled by onclick');
-                console.log('=== END LOADING RESPONSIBILITY SECTION DEBUG ===');
                 break;
             case 'offboarding-section':
                 if (window.offboardingManager) {
@@ -471,7 +454,6 @@ class TechSupportApp {
 
     // Fix audit section position if it's inside dashboard-container
     fixAuditSectionPosition(auditSection) {
-        console.log('🔧 Fixing audit section position...');
         
         // First, hide all other sections
         document.querySelectorAll('.section').forEach(section => {
@@ -596,13 +578,10 @@ class TechSupportApp {
             initializeDropdowns();
         }, 200);
         
-        console.log('✅ Audit section created and displayed');
     }
 
     // Fix onboarding section position if it's inside dashboard-container
     fixOnboardingSectionPosition(onboardingSection) {
-        console.log('🔧 Fixing onboarding section position...');
-        console.log('📊 Target section:', onboardingSection);
         
         try {
             // First, hide all other sections
@@ -911,11 +890,9 @@ class TechSupportApp {
             document.body.appendChild(onboardingContainer);
             document.body.appendChild(closeButton);
             
-            console.log('✅ Onboarding container added to body');
             
             // Load onboarding data
             setTimeout(() => {
-                console.log('📊 Loading onboarding data...');
                 if (typeof window.loadOnboarding === 'function') {
                     window.loadOnboarding();
                 } else if (window.onboardingManager) {
@@ -950,7 +927,6 @@ class TechSupportApp {
                 alert(`Función: Descargar certificado del onboarding ${id}`);
             };
             
-            console.log('✅ Onboarding section created and displayed');
             
         } catch (error) {
             console.error('❌ Error in fixOnboardingSectionPosition:', error);
@@ -959,7 +935,6 @@ class TechSupportApp {
 
     // Fix offboarding section position if it's inside dashboard-container
     fixOffboardingSectionPosition(offboardingSection) {
-        console.log('🔧 Fixing offboarding section position...');
         
         // First, hide all other sections
         document.querySelectorAll('.section').forEach(section => {
@@ -1046,7 +1021,6 @@ class TechSupportApp {
             }
         }, 100);
         
-        console.log('✅ Offboarding section created and displayed');
     }
 }
 
@@ -1070,7 +1044,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Load onboarding processes (fallback function)
 function loadOnboarding() {
-    console.log('=== LOAD ONBOARDING FALLBACK ===');
     if (window.onboardingManager) {
         console.log('OnboardingManager found in fallback, calling loadProcesses...');
         window.onboardingManager.loadProcesses();
@@ -1084,12 +1057,10 @@ function loadOnboarding() {
             showNotification('error', 'Error', 'No se pudo inicializar el gestor de onboarding');
         }
     }
-    console.log('=== END LOAD ONBOARDING FALLBACK ===');
 }
 
 // Load offboarding processes (fallback function)
 function loadOffboarding() {
-    console.log('=== LOAD OFFBOARDING FALLBACK ===');
     if (window.offboardingManager) {
         console.log('OffboardingManager found in fallback, calling loadProcesses...');
         window.offboardingManager.loadProcesses();
@@ -1103,12 +1074,10 @@ function loadOffboarding() {
             showNotification('error', 'Error', 'No se pudo inicializar el gestor de offboarding');
         }
     }
-    console.log('=== END LOAD OFFBOARDING FALLBACK ===');
 }
 
 // Load responsibility letters (fallback function)
 function loadResponsibilityLetters() {
-    console.log('=== LOAD RESPONSIBILITY LETTERS FALLBACK ===');
     if (window.responsibilityManager) {
         console.log('ResponsibilityManager found in fallback, calling loadLetters...');
         window.responsibilityManager.loadLetters();
@@ -1122,7 +1091,6 @@ function loadResponsibilityLetters() {
             showNotification('error', 'Error', 'No se pudo inicializar el gestor de cartas de responsabilidad');
         }
     }
-    console.log('=== END LOAD RESPONSIBILITY LETTERS FALLBACK ===');
 }
 
 // Global utility functions
@@ -1155,7 +1123,6 @@ function loadResponsibilityLetters() {
 
 // Global function to create onboarding overlay
 function createOnboardingOverlay() {
-    console.log('🔧 Creating onboarding overlay...');
     
     // Limpiar cualquier overlay existente
     document.querySelectorAll('[id$="-section"]').forEach(section => {
@@ -1483,12 +1450,10 @@ function createOnboardingOverlay() {
         initializeDropdowns();
     }, 200);
 
-    console.log('✅ Onboarding overlay creado');
 }
 
 // Global function to create profile overlay
 function createProfileOverlay() {
-    console.log('🔧 Creating profile overlay...');
     
     // Limpiar cualquier overlay existente
     document.querySelectorAll('[id$="-section"]').forEach(section => {
@@ -1696,12 +1661,10 @@ function createProfileOverlay() {
         initializeProfileSection();
     }, 200);
 
-    console.log('✅ Profile overlay creado');
 }
 
 // Initialize profile section
 function initializeProfileSection() {
-    console.log('🔧 Inicializando sección de perfil...');
     
     // Add event listener to profile form
     const profileForm = document.getElementById('profileForm');
@@ -1715,7 +1678,6 @@ function initializeProfileSection() {
 
 // Global functions for profile management
 function editProfile() {
-    console.log('🔧 Editando perfil...');
     
     // Get user data to check permissions
     const isAdmin = window.auth && window.auth.user && window.auth.user.role === 'admin';
@@ -1751,7 +1713,6 @@ function editProfile() {
 }
 
 function cancelProfileEdit() {
-    console.log('❌ Cancelando edición de perfil...');
     
     // Get user data to check permissions
     const isAdmin = window.auth && window.auth.user && window.auth.user.role === 'admin';
@@ -1790,7 +1751,6 @@ function cancelProfileEdit() {
 }
 
 function loadProfileData() {
-    console.log('📊 Cargando datos del perfil...');
     
     // Get user data from auth
     if (window.auth && window.auth.user) {
@@ -1874,7 +1834,6 @@ function loadProfileData() {
 
 // Apply permission restrictions to profile fields
 function applyProfilePermissions(isAdmin) {
-    console.log('🔒 Aplicando permisos de perfil. Es admin:', isAdmin);
     
     const profileFullName = document.getElementById('profileFullName');
     const profileEmailInput = document.getElementById('profileEmailInput');
@@ -1993,7 +1952,6 @@ function handleProfileSubmit(event) {
 
 // Global function to create offboarding overlay
 function createOffboardingOverlay() {
-    console.log('🔧 Creating offboarding overlay...');
     
     // Limpiar cualquier overlay existente
     document.querySelectorAll('[id$="-section"]').forEach(section => {
@@ -2408,12 +2366,10 @@ function createOffboardingOverlay() {
         initializeDropdowns();
     }, 200);
 
-    console.log('✅ Offboarding overlay creado');
 }
 
 // Load demo data for dashboard when backend is not available
 function loadDashboardDemoData() {
-    console.log('📊 Loading dashboard demo data...');
     
     // Update stats cards
     const totalUsersEl = document.getElementById('totalUsers');
@@ -2570,7 +2526,6 @@ function loadDashboardDemoData() {
         `;
     }
     
-    console.log('✅ Dashboard demo data loaded');
 }
 
 // Close responsibility dropdown
@@ -2607,7 +2562,6 @@ function initializeDropdowns() {
     const newButton = responsibilityDropdownButton.cloneNode(true);
     responsibilityDropdownButton.parentNode.replaceChild(newButton, responsibilityDropdownButton);
     
-    console.log('✅ Responsibility dropdown elements found, adding event listener...');
     
     // Add click event listener to the new button
     newButton.addEventListener('click', (e) => {
@@ -2658,7 +2612,6 @@ function initializeDropdowns() {
         }
     });
     
-    console.log('✅ Responsibility dropdown initialized successfully');
     
     // User dropdown functionality
     const userMenuButton = document.getElementById('userMenuButton');
@@ -2668,43 +2621,13 @@ function initializeDropdowns() {
     console.log('User dropdown:', userDropdown);
     
     if (userMenuButton && userDropdown) {
-        console.log('✅ User dropdown initialized');
     } else {
-        console.log('❌ User dropdown elements not found');
     }
     
     console.log('🔽 Dropdown initialization complete');
     
     // Test function for responsibility dropdown
-    window.testResponsibilityDropdown = function() {
-        console.log('🧪 Testing responsibility dropdown...');
-        
-        const button = document.getElementById('responsibilityDropdownButton');
-        const dropdown = document.getElementById('responsibilityDropdown');
-        
-        console.log('Button element:', button);
-        console.log('Dropdown element:', dropdown);
-        
-        if (button && dropdown) {
-            console.log('✅ Elements found, simulating click...');
-            button.click();
-            
-            setTimeout(() => {
-                const isVisible = !dropdown.classList.contains('hidden');
-                console.log('Dropdown visible after click:', isVisible);
-                
-                if (isVisible) {
-                    console.log('✅ Dropdown opened successfully!');
-                } else {
-                    console.log('❌ Dropdown failed to open');
-                }
-            }, 100);
-        } else {
-            console.log('❌ Elements not found');
-        }
-    };
     
-    console.log('🧪 Test function available: window.testResponsibilityDropdown()');
 }
 
 // Handle unhandled promise rejections

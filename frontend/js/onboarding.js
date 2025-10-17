@@ -1,7 +1,6 @@
 // Onboarding Management module
 class OnboardingManager {
     constructor() {
-        console.log('=== ONBOARDING MANAGER CONSTRUCTOR ===');
         
         this.processes = [];
         this.filteredProcesses = [];
@@ -23,7 +22,6 @@ class OnboardingManager {
         
         this.init();
         
-        console.log('=== END ONBOARDING MANAGER CONSTRUCTOR ===');
     }
 
     init() {
@@ -84,7 +82,6 @@ class OnboardingManager {
     // Load processes data
     async loadProcesses() {
         try {
-            console.log('=== ONBOARDING LOAD PROCESSES DEBUG ===');
             console.log('API Base:', this.apiBase);
             console.log('Auth object:', auth);
             
@@ -110,7 +107,6 @@ class OnboardingManager {
             // Force section visibility after data is loaded
             this.ensureSectionVisibility();
             
-            console.log('=== END ONBOARDING LOAD PROCESSES DEBUG ===');
         } catch (error) {
             console.error('Error loading onboarding processes:', error);
             // Fallback to empty state so the UI is not blank
@@ -668,7 +664,6 @@ function loadOnboardingProcesses() {
 
 // Initialize onboarding manager when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('=== ONBOARDING INITIALIZATION DEBUG ===');
     console.log('Creating OnboardingManager instance...');
     
         window.onboardingManager = new OnboardingManager();
@@ -698,5 +693,4 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('window.app not available yet');
     }
     
-    console.log('=== END ONBOARDING INITIALIZATION DEBUG ===');
 });

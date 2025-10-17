@@ -84,7 +84,8 @@ class Auth {
         if (response.status === 401) {
             // Token expired or invalid
             await this.logout();
-            window.location.reload();
+            // Redirect to login instead of reload
+            window.location.href = '/';
             return;
         }
 
@@ -163,7 +164,6 @@ document.addEventListener('DOMContentLoaded', function() {
             try {
                 console.log('🔐 Attempting login...');
                 await auth.login(email, password);
-                console.log('✅ Login successful, showing animation...');
                 
                 // Show success animation
                 showLoginSuccessAnimation();
@@ -206,7 +206,6 @@ async function logout() {
         // Clear any active notifications
         clearNotifications();
         
-        console.log('✅ Logout successful, login form reset');
     } catch (error) {
         console.error('Logout error:', error);
         // Force reload even if API call fails
@@ -269,10 +268,8 @@ async function changePassword() {
 
 // Initialize app based on authentication status
 function initializeApp() {
-    console.log('🔍 Checking authentication status...');
     
     if (auth.isAuthenticated()) {
-        console.log('✅ User is authenticated, redirecting to dashboard...');
         
         // User is logged in, show dashboard
         document.getElementById('loadingScreen').classList.add('hidden');
@@ -284,7 +281,6 @@ function initializeApp() {
         if (dashboardSection) {
             dashboardSection.classList.remove('hidden');
             dashboardSection.style.display = 'block';
-            console.log('✅ Dashboard section visible');
         } else {
             console.error('❌ Dashboard section not found!');
         }
@@ -294,13 +290,10 @@ function initializeApp() {
         
         // Initialize dashboard after a short delay to ensure auth is ready
         setTimeout(() => {
-            console.log('🚀 Initializing dashboard for authenticated user...');
             initializeDashboard();
         }, 100);
         
-        console.log('✅ Successfully redirected authenticated user to dashboard');
     } else {
-        console.log('❌ User is not authenticated, showing login screen...');
         
         // User is not logged in, show login screen
         document.getElementById('loadingScreen').classList.add('hidden');
@@ -310,7 +303,6 @@ function initializeApp() {
         // Reset login form to ensure clean state
         resetLoginForm();
         
-        console.log('✅ Login screen displayed');
     }
 }
 
@@ -388,7 +380,6 @@ function showLoginSuccessAnimation() {
         if (dashboardSection) {
             dashboardSection.classList.remove('hidden');
             dashboardSection.style.display = 'block';
-            console.log('✅ Dashboard section made visible');
         }
         
         // Update user info in header
@@ -396,14 +387,12 @@ function showLoginSuccessAnimation() {
         
         // Initialize dashboard after a short delay to ensure auth is ready
         setTimeout(() => {
-            console.log('🚀 Initializing dashboard after successful login...');
             initializeDashboard();
         }, 100);
         
         // Hide animation after dashboard is ready
         setTimeout(() => {
             animation.classList.remove('show');
-            console.log('✅ Successfully redirected to dashboard');
         }, 500);
         
     }, 1500); // Show animation for 1.5 seconds

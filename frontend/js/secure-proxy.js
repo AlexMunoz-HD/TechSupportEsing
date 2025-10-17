@@ -22,7 +22,6 @@ class SecureOnboardingProxy {
     }
 
     init() {
-        console.log('🔒 Secure Onboarding Proxy initialized');
         this.setupEventListeners();
     }
 
@@ -45,7 +44,6 @@ class SecureOnboardingProxy {
      */
     async cargarUsuarios() {
         try {
-            console.log('📡 Cargando usuarios desde proxy seguro...');
             
             // Mostrar loading state
             this.showLoadingState();
@@ -72,7 +70,6 @@ class SecureOnboardingProxy {
             }
 
             this.usuarios = data.usuarios;
-            console.log(`✅ ${this.usuarios.length} usuarios cargados desde proxy seguro`);
             
             // Renderizar tabla de usuarios
             this.renderizarTablaUsuarios();
@@ -138,7 +135,6 @@ class SecureOnboardingProxy {
 
             const result = await response.json();
             
-            console.log('✅ Documento enviado exitosamente:', result);
             
             // Ocultar loading del botón
             this.hideButtonLoading(userId);
@@ -326,7 +322,6 @@ class SecureOnboardingProxy {
      * Mostrar estado vacío cuando no hay datos disponibles
      */
     mostrarEstadoVacio() {
-        console.log('📋 Mostrando estado vacío...');
         
         this.usuarios = [];
         this.renderizarTablaUsuarios();

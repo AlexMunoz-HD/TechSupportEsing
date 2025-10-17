@@ -723,7 +723,6 @@ function loadUsers() {
 
 // Force load users when users section is shown
 function showUsersSection() {
-    console.log('🚀 showUsersSection() called - DIRECT IMPLEMENTATION');
     
     // PASO 1: Ocultar todas las demás secciones
     document.querySelectorAll('.section').forEach(section => {
@@ -732,7 +731,6 @@ function showUsersSection() {
             section.style.display = 'none';
         }
     });
-    console.log('✅ Otras secciones ocultas');
     
     // PASO 2: Encontrar y mostrar la sección de usuarios
     const usersSection = document.getElementById('users-section');
@@ -749,7 +747,6 @@ function showUsersSection() {
     usersSection.style.opacity = '1';
     usersSection.style.position = 'relative';
     usersSection.style.zIndex = '10';
-    console.log('✅ Sección de usuarios visible');
     
     // PASO 4: Asegurar que el dashboard container esté visible
     const dashboard = document.getElementById('dashboard');
@@ -757,22 +754,18 @@ function showUsersSection() {
         dashboard.classList.remove('hidden');
         dashboard.style.display = 'block';
         dashboard.style.visibility = 'visible';
-        console.log('✅ Dashboard container visible');
     }
     
     // PASO 5: Cargar los datos de usuarios
     setTimeout(() => {
-        console.log('📊 Cargando datos de usuarios...');
         if (window.userManager && window.userManager.loadUsers) {
             window.userManager.loadUsers();
-            console.log('✅ Datos de usuarios cargados via UserManager');
         } else {
             console.error('❌ UserManager no disponible');
             alert('Error: El gestor de usuarios no está inicializado. Por favor, recarga la página.');
         }
     }, 100);
     
-    console.log('✅ showUsersSection() completado');
 }
 
 // Inline implementation that always works - Uses existing HTML section
@@ -794,7 +787,6 @@ function createVisibleUsersPageInline() {
         dashboard.style.display = 'block';
         dashboard.style.visibility = 'visible';
         dashboard.style.opacity = '1';
-        console.log('✅ Dashboard container visible');
     }
     
     // Make sure header is visible
@@ -806,7 +798,6 @@ function createVisibleUsersPageInline() {
         header.style.position = 'sticky';
         header.style.top = '0';
         header.style.zIndex = '40';
-        console.log('✅ Header visible');
     }
     
     // Hide ALL other sections including dashboard-section
@@ -817,7 +808,6 @@ function createVisibleUsersPageInline() {
         }
     });
     
-    console.log('✅ Other sections hidden');
     
     // Show the users section with MAXIMUM forced visibility
     usersSection.classList.remove('hidden');
@@ -831,7 +821,6 @@ function createVisibleUsersPageInline() {
         width: 100% !important;
     `;
     
-    console.log('✅ Users section shown with forced styles');
     console.log('Users section element:', usersSection);
     console.log('Users section display:', window.getComputedStyle(usersSection).display);
     console.log('Users section visibility:', window.getComputedStyle(usersSection).visibility);
@@ -843,16 +832,13 @@ function createVisibleUsersPageInline() {
         // Load users using UserManager
         if (window.userManager && window.userManager.loadUsers) {
             window.userManager.loadUsers();
-            console.log('✅ UserManager.loadUsers() called');
         } else {
-            console.log('❌ UserManager not available');
         }
     }, 100);
 }
 
 // Debug function to check navbar visibility
 window.debugNavbar = function() {
-    console.log('🔍 DEBUGGING NAVBAR...');
     
     const dashboard = document.getElementById('dashboard');
     const header = document.querySelector('header');
@@ -894,7 +880,6 @@ window.forceFixNavbar = function() {
         dashboard.style.display = 'block !important';
         dashboard.style.visibility = 'visible !important';
         dashboard.style.opacity = '1 !important';
-        console.log('✅ Dashboard forced visible');
     }
     
     if (header) {
@@ -904,7 +889,6 @@ window.forceFixNavbar = function() {
         header.style.position = 'sticky !important';
         header.style.top = '0 !important';
         header.style.zIndex = '40 !important';
-        console.log('✅ Header forced visible');
     }
     
     // Debug after forcing
@@ -919,7 +903,6 @@ window.loadUsers = loadUsers;
 
 // Debug function to check admin section visibility
 window.debugAdminSection = function() {
-    console.log('🔍 DEBUGGING ADMIN SECTION...');
     
     const adminSection = document.getElementById('adminSection');
     const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -948,7 +931,6 @@ window.debugAdminSection = function() {
         adminSection.style.display = 'block';
         adminSection.style.visibility = 'visible';
         adminSection.style.opacity = '1';
-        console.log('✅ Admin section forced to show');
     }
 };
 
@@ -964,14 +946,12 @@ window.forceShowAdminSection = function() {
         adminSection.style.display = 'block';
         adminSection.style.visibility = 'visible';
         adminSection.style.opacity = '1';
-        console.log('✅ Admin section forced to show');
         
         // Also show the users button specifically
         const usersButton = adminSection.querySelector('a[onclick="showUsersSection()"]');
         if (usersButton) {
             usersButton.style.display = 'block';
             usersButton.style.visibility = 'visible';
-            console.log('✅ Users button forced to show');
         }
     } else {
         console.error('❌ Admin section not found!');
@@ -980,7 +960,6 @@ window.forceShowAdminSection = function() {
 
 // Debug function to check users section visibility
 window.debugUsersSectionVisibility = function() {
-    console.log('🔍 DEBUGGING USERS SECTION VISIBILITY...');
     
     const usersSection = document.getElementById('users-section');
     
@@ -1006,9 +985,7 @@ window.debugUsersSectionVisibility = function() {
         
         // Check if it's actually visible on screen
         if (rect.width === 0 || rect.height === 0) {
-            console.log('❌ Section has no visible dimensions!');
         } else {
-            console.log('✅ Section has visible dimensions');
         }
         
         // Check parent containers
@@ -1130,7 +1107,6 @@ window.createVisibleUsersPage = function() {
     // Add to body
     document.body.appendChild(newUsersSection);
     
-    console.log('✅ New visible users page created');
     
     // Load users
     setTimeout(() => {
@@ -1145,7 +1121,6 @@ window.hideUsersPage = function() {
     const usersSection = document.getElementById('users-section');
     if (usersSection) {
         usersSection.remove();
-        console.log('✅ Users page hidden');
     }
 };
 
@@ -1176,7 +1151,6 @@ window.forceShowUsersSection = function() {
         usersSection.style.top = '0';
         usersSection.style.left = '0';
         
-        console.log('✅ Users section forced to show with maximum visibility');
         
         // Load users
         setTimeout(() => {
@@ -1216,30 +1190,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Test function to verify everything works
-    window.testUsersPage = function() {
-        console.log('🧪 Testing users page...');
-        
-        // Check if elements exist
-        const usersSection = document.getElementById('users-section');
-        const usersTableBody = document.getElementById('usersTableBody');
-        
-        console.log('Users section element:', usersSection);
-        console.log('Users table body element:', usersTableBody);
-        
-        if (usersSection && usersTableBody) {
-            console.log('✅ All elements found');
-            
-            // Show the section using the global showSection function
-            console.log('🧪 Calling window.showSection("users-section")...');
-            window.showSection('users-section');
-            
-        } else {
-            console.log('❌ Missing elements');
-            console.log('Available elements:');
-            console.log('- users-section:', document.getElementById('users-section'));
-            console.log('- usersTableBody:', document.getElementById('usersTableBody'));
-        }
-    };
     
     // Emergency function to force show users section
     window.forceShowUsers = function() {
@@ -1261,7 +1211,6 @@ document.addEventListener('DOMContentLoaded', function() {
             usersSection.style.position = 'relative';
             usersSection.style.zIndex = '1';
             
-            console.log('✅ Users section forced to show');
             
             // Load users
             setTimeout(() => {
@@ -1280,7 +1229,6 @@ document.addEventListener('DOMContentLoaded', function() {
         // Find the users section
         const usersSection = document.getElementById('users-section');
         if (!usersSection) {
-            console.log('❌ Users section not found, creating emergency table instead');
             window.createEmergencyUsersTable();
             return;
         }
@@ -1421,19 +1369,16 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         
-        console.log('✅ ENTIRE USERS SECTION REPLACED WITH NEW CONTENT');
         console.log('Users section:', usersSection);
         console.log('New content:', newContent);
     };
 
     // PERMANENT SOLUTION: Create a visible table inside the users section
     window.createPermanentUsersTable = function() {
-        console.log('🔧 CREATING PERMANENT USERS TABLE...');
         
         // Find the users section
         const usersSection = document.getElementById('users-section');
         if (!usersSection) {
-            console.log('❌ Users section not found, creating emergency table instead');
             window.createEmergencyUsersTable();
             return;
         }
@@ -1551,7 +1496,6 @@ document.addEventListener('DOMContentLoaded', function() {
         // Add to users section
         usersSection.appendChild(permanentContainer);
         
-        console.log('✅ PERMANENT TABLE CREATED AND ADDED TO USERS SECTION');
         console.log('Permanent container:', permanentContainer);
         console.log('Table:', table);
         console.log('Users count:', tbody.children.length);
@@ -1676,7 +1620,6 @@ document.addEventListener('DOMContentLoaded', function() {
         // Add to body
         document.body.appendChild(emergencyContainer);
         
-        console.log('✅ EMERGENCY TABLE CREATED AND ADDED TO BODY');
         console.log('Emergency container:', emergencyContainer);
         console.log('Table:', table);
         console.log('Users count:', tbody.children.length);
@@ -1684,7 +1627,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Debug function to check visual elements
     window.debugUsersVisibility = function() {
-        console.log('🔍 DEBUGGING USERS VISIBILITY...');
         
         const usersSection = document.getElementById('users-section');
         const usersTableBody = document.getElementById('usersTableBody');
@@ -1718,5 +1660,4 @@ document.addEventListener('DOMContentLoaded', function() {
         window.createEmergencyUsersTable();
     };
     
-    console.log('🧪 Test function available: window.testUsersPage()');
 });
