@@ -428,6 +428,19 @@ class OffboardingManager {
         }
     }
 
+    // Helper function to get country from location
+    getCountryFromLocation(location) {
+        if (!location) return 'Remoto';
+        const loc = location.toUpperCase().trim();
+        if (loc === 'MX' || loc === 'MEXICO' || loc === 'MÉXICO') {
+            return 'México';
+        } else if (loc === 'CL' || loc === 'CHILE') {
+            return 'Chile';
+        } else {
+            return 'Remoto';
+        }
+    }
+
     // Render processes table
     renderProcessesTable() {
         const tbody = document.getElementById('offboardingTableBody');
@@ -440,7 +453,7 @@ class OffboardingManager {
         if (pageProcesses.length === 0) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="7" class="px-6 py-12 text-center text-gray-500">
+                    <td colspan="8" class="px-6 py-12 text-center text-gray-500">
                         <div class="flex flex-col items-center">
                             <i class="fas fa-user-minus text-4xl text-gray-300 mb-4"></i>
                             <p class="text-lg font-medium text-gray-900 mb-2">No se encontraron procesos</p>
@@ -472,6 +485,17 @@ class OffboardingManager {
                 <td class="px-6 py-4 whitespace-nowrap">
                     <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">
                         ${process.department}
+                    </span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        this.getCountryFromLocation(process.location) === 'México'
+                            ? 'bg-green-100 text-green-800'
+                            : this.getCountryFromLocation(process.location) === 'Chile'
+                            ? 'bg-blue-100 text-blue-800'
+                            : 'bg-purple-100 text-purple-800'
+                    }">
+                        ${this.getCountryFromLocation(process.location)}
                     </span>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
@@ -765,12 +789,200 @@ class OffboardingManager {
 
     // Modal functions
     openCreateProcessModal() {
-        document.getElementById('createOffboardingModal').classList.remove('hidden');
-        document.getElementById('createOffboardingForm').reset();
+        console.log('🔵 OffboardingManager.openCreateProcessModal() called');
+        const modal = document.getElementById('createOffboardingModal');
+        
+        if (modal) {
+            modal.classList.remove('hidden');
+            modal.style.display = 'flex';
+            modal.style.alignItems = 'center';
+            modal.style.justifyContent = 'center';
+            modal.style.zIndex = '100000';
+            
+            // Reset form
+            const form = document.getElementById('createOffboardingForm');
+            if (form) {
+                form.reset();
+            }
+            
+            // Setup employee autocomplete from Snipe-IT
+            this.setupEmployeeAutocomplete();
+            
+            console.log('✅ Create offboarding modal opened');
+        } else {
+            console.error('❌ createOffboardingModal not found in DOM');
+            if (window.showNotification) {
+                window.showNotification('error', 'Error', 'No se pudo abrir el modal de crear offboarding');
+            } else {
+                alert('Error: No se pudo abrir el modal de crear offboarding. Por favor, recarga la página.');
+            }
+        }
+    }
+
+    // Setup employee autocomplete from Snipe-IT
+    setupEmployeeAutocomplete() {
+        const nameInput = document.getElementById('offboardingEmployeeName');
+        const autocompleteDiv = document.getElementById('offboardingEmployeeAutocomplete');
+        const emailInput = document.getElementById('offboardingEmail');
+        const positionInput = document.getElementById('offboardingPosition');
+        const departmentInput = document.getElementById('offboardingDepartment');
+        const locationInput = document.getElementById('offboardingLocation');
+        
+        if (!nameInput || !autocompleteDiv) {
+            console.warn('⚠️ Autocomplete elements not found');
+            return;
+        }
+        
+        let searchTimeout;
+        let selectedUserId = null;
+        
+        // Get fresh reference after potential DOM updates
+        const currentNameInput = document.getElementById('offboardingEmployeeName');
+        if (!currentNameInput) {
+            console.warn('⚠️ Name input not found after setup');
+            return;
+        }
+        
+        // Search users in Snipe-IT
+        currentNameInput.addEventListener('input', async (e) => {
+            const query = e.target.value.trim();
+            
+            clearTimeout(searchTimeout);
+            
+            if (query.length < 2) {
+                autocompleteDiv.classList.add('hidden');
+                autocompleteDiv.style.display = 'none';
+                return;
+            }
+            
+            searchTimeout = setTimeout(async () => {
+                try {
+                    console.log('🔍 Searching employees in Snipe-IT:', query);
+                    
+                    if (!window.auth || !window.auth.apiRequest) {
+                        console.error('❌ Auth not available');
+                        return;
+                    }
+                    
+                    const response = await window.auth.apiRequest(`/jumpcloud/snipe/users/search?query=${encodeURIComponent(query)}`, {
+                        method: 'GET'
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`API error: ${response.status}`);
+                    }
+                    
+                    const data = await response.json();
+                    const users = data.users || [];
+                    
+                    console.log('✅ Found users:', users.length);
+                    
+                    if (users.length === 0) {
+                        autocompleteDiv.innerHTML = '<div style="padding: 12px; color: #6B7280; text-align: center; font-size: 14px;">No se encontraron usuarios en Snipe-IT</div>';
+                        autocompleteDiv.classList.remove('hidden');
+                        autocompleteDiv.style.display = 'block';
+                        return;
+                    }
+                    
+                    autocompleteDiv.innerHTML = users.map(user => `
+                        <div class="autocomplete-item" 
+                             data-user-id="${user.id}" 
+                             data-user-name="${user.name || ''}" 
+                             data-user-email="${user.email || user.username || ''}" 
+                             data-user-position="${user.jobtitle || ''}"
+                             data-user-department="${user.department || ''}"
+                             data-user-location="${user.location || ''}"
+                             style="
+                                padding: 12px;
+                                cursor: pointer;
+                                border-bottom: 1px solid #E5E7EB;
+                                transition: background 0.2s;
+                            " 
+                            onmouseover="this.style.background='#F3F4F6'" 
+                            onmouseout="this.style.background='white'">
+                            <div style="font-weight: 600; color: #1F2937; font-size: 14px;">${user.name || 'Sin nombre'}</div>
+                            <div style="font-size: 12px; color: #6B7280; margin-top: 4px;">
+                                ${user.email || user.username || ''} 
+                                ${user.employee_num ? '| ID: ' + user.employee_num : ''}
+                            </div>
+                        </div>
+                    `).join('');
+                    
+                    autocompleteDiv.classList.remove('hidden');
+                    autocompleteDiv.style.display = 'block';
+                    
+                    // Add click handlers
+                    autocompleteDiv.querySelectorAll('.autocomplete-item').forEach(item => {
+                        item.addEventListener('click', () => {
+                            const userId = item.dataset.userId;
+                            const userName = item.dataset.userName;
+                            const userEmail = item.dataset.userEmail;
+                            const userPosition = item.dataset.userPosition;
+                            const userDepartment = item.dataset.userDepartment;
+                            const userLocation = item.dataset.userLocation;
+                            
+                            selectedUserId = userId;
+                            const currentInput = document.getElementById('offboardingEmployeeName');
+                            if (currentInput) currentInput.value = userName;
+                            
+                            // Auto-fill other fields
+                            if (emailInput) emailInput.value = userEmail;
+                            if (positionInput && userPosition) positionInput.value = userPosition;
+                            if (departmentInput && userDepartment) departmentInput.value = userDepartment;
+                            if (locationInput && userLocation) {
+                                // Try to match location with select options
+                                const locationOptions = Array.from(locationInput.options);
+                                const matchedOption = locationOptions.find(opt => 
+                                    opt.value === userLocation || 
+                                    opt.text.toLowerCase().includes(userLocation.toLowerCase())
+                                );
+                                if (matchedOption) {
+                                    locationInput.value = matchedOption.value;
+                                }
+                            }
+                            
+                            autocompleteDiv.classList.add('hidden');
+                            autocompleteDiv.style.display = 'none';
+                            
+                            console.log('✅ Employee selected:', { userName, userEmail, userPosition, userDepartment });
+                        });
+                    });
+                } catch (error) {
+                    console.error('❌ Error searching users in Snipe-IT:', error);
+                    autocompleteDiv.innerHTML = `<div style="padding: 12px; color: #EF4444; text-align: center; font-size: 14px;">Error buscando usuarios: ${error.message || 'Error desconocido'}</div>`;
+                    autocompleteDiv.classList.remove('hidden');
+                    autocompleteDiv.style.display = 'block';
+                }
+            }, 300);
+        });
+        
+        // Close autocomplete when clicking outside
+        const closeAutocompleteHandler = (e) => {
+            const currentInput = document.getElementById('offboardingEmployeeName');
+            if (currentInput && !currentInput.contains(e.target) && !autocompleteDiv.contains(e.target)) {
+                autocompleteDiv.classList.add('hidden');
+                autocompleteDiv.style.display = 'none';
+            }
+        };
+        
+        // Use a single event listener that we can remove later
+        document.addEventListener('click', closeAutocompleteHandler);
+        
+        // Store handler for cleanup if needed
+        if (!this._autocompleteHandlers) {
+            this._autocompleteHandlers = [];
+        }
+        this._autocompleteHandlers.push(closeAutocompleteHandler);
+        
+        console.log('✅ Employee autocomplete setup completed');
     }
 
     closeCreateProcessModal() {
-        document.getElementById('createOffboardingModal').classList.add('hidden');
+        const modal = document.getElementById('createOffboardingModal');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.style.display = 'none';
+        }
     }
 
     openEditProcessModal() {

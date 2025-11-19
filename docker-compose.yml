@@ -13,7 +13,7 @@ services:
       MYSQL_USER: techsupport_user
       MYSQL_PASSWORD: techsupport_pass
     ports:
-      - "3306:3306"
+      - "3307:3306"
     volumes:
       - mysql_data:/var/lib/mysql
       - ./backend/database/init.sql:/docker-entrypoint-initdb.d/init.sql
@@ -34,8 +34,15 @@ services:
       DB_NAME: techsupport_db
       DB_USER: techsupport_user
       DB_PASSWORD: techsupport_pass
-      JWT_SECRET: your-super-secret-jwt-key-change-in-production
+      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
       PORT: 3001
+      # Jira Configuration (from environment variables)
+      JIRA_HOST: ${JIRA_HOST:-}
+      JIRA_EMAIL: ${JIRA_EMAIL:-}
+      JIRA_API_TOKEN: ${JIRA_API_TOKEN:-}
+      # Snipe-IT Configuration (from environment variables)
+      SNIPE_IT_API_BASE: ${SNIPE_IT_API_BASE:-}
+      SNIPE_IT_API_KEY: ${SNIPE_IT_API_KEY:-}
     ports:
       - "3001:3001"
     depends_on:
@@ -54,7 +61,7 @@ services:
     container_name: techsupport-frontend
     restart: unless-stopped
     ports:
-      - "3000:80"
+      - "3003:80"
     depends_on:
       - backend
     volumes:

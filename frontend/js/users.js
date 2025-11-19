@@ -121,33 +121,90 @@ class UserManager {
     // Load users data
     async loadUsers() {
         try {
-            console.log('UserManager: Loading users from database...');
-            console.log('UserManager: API Base:', this.apiBase);
-            console.log('UserManager: Auth object:', auth);
+            console.log('📥 UserManager: Loading users from database...');
+            console.log('📥 UserManager: API Base:', this.apiBase);
+            console.log('📥 UserManager: Auth object:', auth);
             
-            const response = await auth.apiRequest(`${this.apiBase}`);
-            console.log('UserManager: API Response:', response);
-            console.log('UserManager: Response status:', response.status);
-            console.log('UserManager: Response ok:', response.ok);
-            
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.log('UserManager: Error response:', errorText);
-                throw new Error(`Error loading users: ${response.status} ${response.statusText}`);
+            // Check if user is authenticated
+            if (!auth || !auth.token) {
+                console.error('❌ UserManager: User not authenticated');
+                const errorMsg = 'No estás autenticado. Por favor, inicia sesión.';
+                if (window.showNotification) {
+                    window.showNotification('error', 'Error', errorMsg);
+                } else {
+                    alert(errorMsg);
+                }
+                return;
             }
             
-            const data = await response.json();
-            console.log('UserManager: Users data received:', data);
-            console.log('UserManager: Users count:', data.users?.length);
+            console.log('📥 UserManager: Token exists:', !!auth.token);
+            console.log('📥 UserManager: User role:', auth.user?.role);
+            
+            // Check if user is admin
+            if (auth.user?.role !== 'admin') {
+                console.error('❌ UserManager: User is not admin');
+                const errorMsg = 'No tienes permisos para ver esta sección. Se requiere rol de administrador.';
+                if (window.showNotification) {
+                    window.showNotification('error', 'Error', errorMsg);
+                } else {
+                    alert(errorMsg);
+                }
+                return;
+            }
+            
+            console.log('📥 UserManager: Making API request to:', `${auth.apiBase}${this.apiBase}`);
+            const response = await auth.apiRequest(`${this.apiBase}`);
+            console.log('📥 UserManager: API Response received');
+            console.log('📥 UserManager: Response status:', response.status);
+            console.log('📥 UserManager: Response ok:', response.ok);
+            
+            if (!response || !response.ok) {
+                const errorText = await response.text();
+                console.error('❌ UserManager: Error response:', errorText);
+                let errorData;
+                try {
+                    errorData = JSON.parse(errorText);
+                } catch (e) {
+                    errorData = { error: errorText || 'Error desconocido' };
+                }
+                throw new Error(errorData.error || `Error ${response.status}: ${response.statusText}`);
+            }
+            
+            // Ensure UTF-8 decoding
+            const text = await response.text();
+            let data;
+            try {
+                data = JSON.parse(text);
+            } catch (e) {
+                console.error('❌ UserManager: Failed to parse JSON:', e);
+                throw new Error('Error al procesar la respuesta del servidor');
+            }
+            
+            console.log('✅ UserManager: Users data received:', data);
+            console.log('✅ UserManager: Users count:', data.users?.length || 0);
+            
+            if (!data.users || !Array.isArray(data.users)) {
+                console.error('❌ UserManager: Invalid data format:', data);
+                throw new Error('Formato de datos inválido recibido del servidor');
+            }
             
             this.users = data.users;
+            console.log('✅ UserManager: Users array set, count:', this.users.length);
+            
+            // Apply filters and render
             this.applyFilters();
             this.updateStats();
-            console.log('UserManager: Users loaded successfully from database');
+            
+            console.log('✅ UserManager: Users loaded successfully from database');
         } catch (error) {
-            console.error('Error loading users:', error);
-            console.log('UserManager: Error details:', error.message);
-            showNotification('error', 'Error', `No se pudieron cargar los usuarios: ${error.message}`);
+            console.error('❌ Error loading users:', error);
+            console.error('❌ Error stack:', error.stack);
+            const errorMsg = error.message || 'No se pudieron cargar los usuarios';
+            if (window.showNotification) {
+                window.showNotification('error', 'Error', errorMsg);
+            } else {
+                alert(`Error: ${errorMsg}`);
+            }
         }
     }
 
@@ -464,35 +521,91 @@ class UserManager {
     // Create user
     async createUser() {
         try {
+            console.log('📝 UserManager.createUser() called');
+            
+            const fullNameEl = document.getElementById('userFullName');
+            const usernameEl = document.getElementById('userUsername');
+            const emailEl = document.getElementById('userEmail');
+            const passwordEl = document.getElementById('userPassword');
+            const roleEl = document.getElementById('userRole');
+            const locationEl = document.getElementById('userLocation');
+            
+            if (!fullNameEl || !usernameEl || !emailEl || !passwordEl || !roleEl || !locationEl) {
+                console.error('❌ Form elements not found:', {
+                    fullName: !!fullNameEl,
+                    username: !!usernameEl,
+                    email: !!emailEl,
+                    password: !!passwordEl,
+                    role: !!roleEl,
+                    location: !!locationEl
+                });
+                throw new Error('No se encontraron todos los campos del formulario');
+            }
+            
             const formData = {
-                full_name: document.getElementById('userFullName').value,
-                username: document.getElementById('userUsername').value,
-                email: document.getElementById('userEmail').value,
-                password: document.getElementById('userPassword').value,
-                role: document.getElementById('userRole').value,
-                location: document.getElementById('userLocation').value
+                full_name: fullNameEl.value.trim(),
+                username: usernameEl.value.trim(),
+                email: emailEl.value.trim(),
+                password: passwordEl.value,
+                role: roleEl.value,
+                location: locationEl.value
             };
+            
+            console.log('📤 Sending user data:', { ...formData, password: '***' });
+            
+            // Validate required fields
+            if (!formData.full_name || !formData.username || !formData.email || !formData.password) {
+                throw new Error('Todos los campos son requeridos');
+            }
+            
+            if (!auth || !auth.apiRequest) {
+                throw new Error('Sistema de autenticación no disponible');
+            }
 
             const response = await auth.apiRequest(`${this.apiBase}`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    ...auth.getAuthHeader()
+                    'Content-Type': 'application/json; charset=utf-8',
                 },
                 body: JSON.stringify(formData)
             });
 
+            console.log('📥 API Response:', response.status, response.statusText);
+
             if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.error || 'Error creating user');
+                const errorText = await response.text();
+                let errorData;
+                try {
+                    errorData = JSON.parse(errorText);
+                } catch (e) {
+                    errorData = { error: errorText || 'Error desconocido' };
+                }
+                console.error('❌ API Error:', errorData);
+                throw new Error(errorData.error || `Error ${response.status}: ${response.statusText}`);
             }
 
-            showNotification('success', 'Éxito', 'Usuario creado correctamente');
+            const result = await response.json();
+            console.log('✅ Usuario creado exitosamente:', result);
+
+            if (window.showNotification) {
+                window.showNotification('success', 'Éxito', 'Usuario creado correctamente');
+            } else {
+                alert('✅ Usuario creado exitosamente!');
+            }
+            
             this.closeCreateUserModal();
-            this.loadUsers();
+            
+            // Reload users list
+            if (this.loadUsers) {
+                await this.loadUsers();
+            }
         } catch (error) {
-            console.error('Error creating user:', error);
-            showNotification('error', 'Error', error.message);
+            console.error('❌ Error creating user:', error);
+            if (window.showNotification) {
+                window.showNotification('error', 'Error', error.message || 'No se pudo crear el usuario');
+            } else {
+                alert(`❌ Error: ${error.message || 'No se pudo crear el usuario'}`);
+            }
         }
     }
 
@@ -500,21 +613,47 @@ class UserManager {
     async editUser(userId) {
         try {
             const user = this.users.find(u => u.id === userId);
-            if (!user) return;
+            if (!user) {
+                showNotification('error', 'Error', 'Usuario no encontrado');
+                return;
+            }
 
-            // Fill edit form
-            document.getElementById('editUserId').value = user.id;
-            document.getElementById('editUserFullName').value = user.full_name;
-            document.getElementById('editUserUsername').value = user.username;
-            document.getElementById('editUserEmail').value = user.email;
-            document.getElementById('editUserRole').value = user.role;
-            document.getElementById('editUserLocation').value = user.location;
-            document.getElementById('editUserStatus').value = user.is_active.toString();
+            // Check if using the new modal system (abrirModalEditarUsuario)
+            if (window.abrirModalEditarUsuario) {
+                window.abrirModalEditarUsuario(
+                    user.id,
+                    user.username,
+                    user.email,
+                    user.role,
+                    user.location,
+                    user.is_active,
+                    user.full_name
+                );
+            } else {
+                // Fallback to old modal system
+                const editUserId = document.getElementById('editUserId');
+                const editUserFullName = document.getElementById('editUserFullName');
+                const editUserUsername = document.getElementById('editUserUsername');
+                const editUserEmail = document.getElementById('editUserEmail');
+                const editUserRole = document.getElementById('editUserRole');
+                const editUserLocation = document.getElementById('editUserLocation');
+                const editUserStatus = document.getElementById('editUserStatus');
 
-            this.openEditUserModal();
+                if (editUserId) editUserId.value = user.id;
+                if (editUserFullName) editUserFullName.value = user.full_name || '';
+                if (editUserUsername) editUserUsername.value = user.username;
+                if (editUserEmail) editUserEmail.value = user.email;
+                if (editUserRole) editUserRole.value = user.role;
+                if (editUserLocation) editUserLocation.value = user.location;
+                if (editUserStatus) editUserStatus.value = user.is_active.toString();
+
+                this.openEditUserModal();
+            }
         } catch (error) {
             console.error('Error editing user:', error);
-            showNotification('error', 'Error', 'No se pudo cargar la información del usuario');
+            if (window.showNotification) {
+                window.showNotification('error', 'Error', 'No se pudo cargar la información del usuario');
+            }
         }
     }
 
@@ -683,20 +822,277 @@ class UserManager {
     closeChangePasswordModal() {
         document.getElementById('changePasswordModal').classList.add('hidden');
     }
+
+    // Mostrar modal de confirmación para enviar mensaje a Slack
+    showSlackMessageModal(userId, userName, userEmail) {
+        const modal = document.createElement('div');
+        modal.id = 'slackMessageModal';
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+        modal.innerHTML = `
+            <div class="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-md w-full mx-4 shadow-lg border border-gray-200 dark:border-gray-700">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                        <svg class="w-6 h-6 text-purple-600" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M5.042 15.165a2.528 2.528 0 0 1-1.524-3.237c.16-.38.388-.73.674-1.02l1.523-1.523c.472-.471 1.08-.693 1.696-.693.616 0 1.224.222 1.696.693l.701.701c.471.471.693 1.08.693 1.696 0 .616-.222 1.224-.693 1.696l-1.523 1.523c-.29.286-.64.514-1.02.674a2.528 2.528 0 0 1-3.237-1.524l-.001-.001zm15.916 0a2.528 2.528 0 0 1-3.237 1.524c-.38-.16-.73-.388-1.02-.674l-1.523-1.523a2.396 2.396 0 0 1-.693-1.696c0-.616.222-1.224.693-1.696l.701-.701c.471-.471 1.08-.693 1.696-.693.616 0 1.224.222 1.696.693l1.523 1.523c.286.29.514.64.674 1.02a2.528 2.528 0 0 1 1.524 3.237l.001.001zM12.5 8.5c-.276 0-.5-.224-.5-.5s.224-.5.5-.5.5.224.5.5-.224.5-.5.5zm0 7c-.276 0-.5-.224-.5-.5s.224-.5.5-.5.5.224.5.5-.224.5-.5.5z"/>
+                        </svg>
+                        Enviar Mensaje a Slack
+                    </h3>
+                    <button onclick="this.closest('.fixed').remove()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="mb-4">
+                    <p class="text-gray-700 dark:text-gray-300">
+                        ¿Estás seguro de enviar mensaje a <strong>${userName}</strong> por Slack?
+                    </p>
+                </div>
+                <div class="flex gap-3 justify-end">
+                    <button onclick="this.closest('.fixed').remove()" 
+                            class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
+                        No
+                    </button>
+                    <button onclick="userManager.sendSlackMessage(${userId}, ${JSON.stringify(userName)}, ${JSON.stringify(userEmail)}); this.closest('.fixed').remove();" 
+                            class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
+                        Sí
+                    </button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+
+    // Mostrar modal de confirmación para enviar recordatorio de firma
+    showSlackReminderModal(userId, userName, userEmail) {
+        const modal = document.createElement('div');
+        modal.id = 'slackReminderModal';
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+        modal.innerHTML = `
+            <div class="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-md w-full mx-4 shadow-lg border border-gray-200 dark:border-gray-700">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                        <i class="fas fa-bell text-orange-600"></i>
+                        Recordatorio de Firma
+                    </h3>
+                    <button onclick="this.closest('.fixed').remove()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="mb-4">
+                    <p class="text-gray-700 dark:text-gray-300">
+                        ¿Quieres enviar un recordatorio de firma a <strong>${userName}</strong>?
+                    </p>
+                </div>
+                <div class="flex gap-3 justify-end">
+                    <button onclick="this.closest('.fixed').remove()" 
+                            class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
+                        No
+                    </button>
+                    <button onclick="userManager.sendSlackReminder(${userId}, ${JSON.stringify(userName)}, ${JSON.stringify(userEmail)}); this.closest('.fixed').remove();" 
+                            class="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors">
+                        Sí
+                    </button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+
+    // Enviar mensaje a Slack
+    async sendSlackMessage(userId, userName, userEmail) {
+        try {
+            const response = await auth.apiRequest('/integrations/slack/send-message', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    userId,
+                    userName,
+                    userEmail
+                })
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || 'Error enviando mensaje a Slack');
+            }
+
+            const result = await response.json();
+            if (window.showNotification) {
+                window.showNotification('success', 'Éxito', 'Mensaje enviado a Slack exitosamente');
+            } else {
+                alert('✅ Mensaje enviado a Slack exitosamente');
+            }
+        } catch (error) {
+            console.error('Error sending Slack message:', error);
+            if (window.showNotification) {
+                window.showNotification('error', 'Error', error.message || 'No se pudo enviar el mensaje a Slack');
+            } else {
+                alert(`❌ Error: ${error.message || 'No se pudo enviar el mensaje a Slack'}`);
+            }
+        }
+    }
+
+    // Enviar recordatorio de firma a Slack
+    async sendSlackReminder(userId, userName, userEmail) {
+        try {
+            const response = await auth.apiRequest('/integrations/slack/send-reminder', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    userId,
+                    userName,
+                    userEmail
+                })
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || 'Error enviando recordatorio a Slack');
+            }
+
+            const result = await response.json();
+            if (window.showNotification) {
+                window.showNotification('success', 'Éxito', 'Recordatorio de firma enviado a Slack exitosamente');
+            } else {
+                alert('✅ Recordatorio de firma enviado a Slack exitosamente');
+            }
+        } catch (error) {
+            console.error('Error sending Slack reminder:', error);
+            if (window.showNotification) {
+                window.showNotification('error', 'Error', error.message || 'No se pudo enviar el recordatorio a Slack');
+            } else {
+                alert(`❌ Error: ${error.message || 'No se pudo enviar el recordatorio a Slack'}`);
+            }
+        }
+    }
 }
 
 // Global functions for modal controls
 function openCreateUserModal() {
-    if (window.userManager) {
-        window.userManager.openCreateUserModal();
+    console.log('🔵 openCreateUserModal called');
+    const modal = document.getElementById('createUserModal');
+    console.log('🔵 Modal element:', modal);
+    
+    if (modal) {
+        modal.classList.remove('hidden');
+        modal.style.display = 'flex';
+        modal.style.alignItems = 'center';
+        modal.style.justifyContent = 'center';
+        
+        // Reset form
+        const form = document.getElementById('createUserForm');
+        if (form) {
+            form.reset();
+            
+            // Re-attach event listener to ensure it works
+            // Remove existing listeners first
+            const newForm = form.cloneNode(true);
+            form.parentNode.replaceChild(newForm, form);
+            
+            // Attach submit listener
+            if (window.userManager) {
+                newForm.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    console.log('📝 Form submitted, calling createUser');
+                    window.userManager.createUser();
+                });
+            } else {
+                // Fallback: direct submission
+                newForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    console.log('📝 Form submitted (fallback mode)');
+                    await handleCreateUserDirectly();
+                });
+            }
+        }
+        console.log('✅ Modal opened and form listeners attached');
+    } else {
+        console.error('❌ createUserModal not found in DOM');
+        // Try using UserManager as fallback
+        if (window.userManager) {
+            window.userManager.openCreateUserModal();
+        } else {
+            alert('Error: No se pudo abrir el modal de crear usuario. Por favor, recarga la página.');
+        }
     }
 }
 
+// Fallback function to create user directly
+async function handleCreateUserDirectly() {
+    try {
+        const formData = {
+            full_name: document.getElementById('userFullName').value,
+            username: document.getElementById('userUsername').value,
+            email: document.getElementById('userEmail').value,
+            password: document.getElementById('userPassword').value,
+            role: document.getElementById('userRole').value,
+            location: document.getElementById('userLocation').value
+        };
+        
+        console.log('📤 Sending user data:', { ...formData, password: '***' });
+        
+        if (!window.auth || !window.auth.apiRequest) {
+            throw new Error('Sistema de autenticación no disponible');
+        }
+        
+        const response = await window.auth.apiRequest('/users', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json; charset=utf-8',
+            },
+            body: JSON.stringify(formData)
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Error al crear el usuario');
+        }
+        
+        const result = await response.json();
+        console.log('✅ Usuario creado exitosamente:', result);
+        
+        // Show success message
+        if (window.showNotification) {
+            window.showNotification('success', 'Éxito', 'Usuario creado correctamente');
+        } else {
+            alert('✅ Usuario creado exitosamente!');
+        }
+        
+        // Close modal
+        closeCreateUserModal();
+        
+        // Reload users list
+        if (window.userManager && window.userManager.loadUsers) {
+            await window.userManager.loadUsers();
+        }
+    } catch (error) {
+        console.error('❌ Error al crear usuario:', error);
+        if (window.showNotification) {
+            window.showNotification('error', 'Error', error.message || 'No se pudo crear el usuario');
+        } else {
+            alert(`❌ Error: ${error.message || 'No se pudo crear el usuario'}`);
+        }
+    }
+}
+
+// Make it globally available
+window.openCreateUserModal = openCreateUserModal;
+
 function closeCreateUserModal() {
-    if (window.userManager) {
+    const modal = document.getElementById('createUserModal');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.style.display = 'none';
+    } else if (window.userManager) {
         window.userManager.closeCreateUserModal();
     }
 }
+
+// Make it globally available
+window.closeCreateUserModal = closeCreateUserModal;
 
 function closeEditUserModal() {
     if (window.userManager) {

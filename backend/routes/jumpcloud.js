@@ -10,7 +10,11 @@ router.use(requireAdmin);
 
 // JumpCloud API configuration
 const JUMPCLOUD_API_BASE = 'https://console.jumpcloud.com/api';
-const JUMPCLOUD_API_KEY = process.env.JUMPCLOUD_API_KEY || 'jca_8j2iX9AkqTgQzwwyqtTfV1rN69N4m1NF3Mii';
+const JUMPCLOUD_API_KEY = process.env.JUMPCLOUD_API_KEY;
+
+if (!JUMPCLOUD_API_KEY) {
+  console.warn('Warning: JUMPCLOUD_API_KEY environment variable is not set');
+}
 
 // Check if API key is valid format
 function isValidApiKeyFormat(apiKey) {
@@ -20,10 +24,11 @@ function isValidApiKeyFormat(apiKey) {
 
 // Helper function to make JumpCloud API requests
 async function makeJumpCloudRequest(endpoint, params = {}) {
+  if (!JUMPCLOUD_API_KEY) {
+    throw new Error('JumpCloud API key is not configured');
+  }
+
   try {
-    console.log(`Making request to: ${JUMPCLOUD_API_BASE}${endpoint}`);
-    console.log(`Using API key: ${JUMPCLOUD_API_KEY.substring(0, 10)}...`);
-    
     const response = await axios.get(`${JUMPCLOUD_API_BASE}${endpoint}`, {
       headers: {
         'Accept': 'application/json',
@@ -31,12 +36,9 @@ async function makeJumpCloudRequest(endpoint, params = {}) {
         'Content-Type': 'application/json'
       },
       params,
-      timeout: 10000 // 10 second timeout
+      timeout: 10000
     });
     
-    console.log(`Response status: ${response.status}`);
-    console.log(`Response data type: ${typeof response.data}`);
-    console.log(`Response data length: ${Array.isArray(response.data) ? response.data.length : 'not array'}`);
     return response.data;
   } catch (error) {
     console.error('JumpCloud API Error:', {
@@ -47,6 +49,25 @@ async function makeJumpCloudRequest(endpoint, params = {}) {
     });
     throw new Error(`JumpCloud API Error: ${error.response?.statusText || error.message}`);
   }
+}
+
+// Helper function to transform JumpCloud user data
+function transformJumpCloudUser(user) {
+  return {
+    id: user.id,
+    username: user.username,
+    email: user.email,
+    firstName: user.firstname,
+    lastName: user.lastname,
+    fullName: `${user.firstname || ''} ${user.lastname || ''}`.trim(),
+    active: user.activated,
+    created: user.created,
+    lastLogin: user.lastLogin,
+    department: user.department,
+    location: user.location,
+    phoneNumber: user.phoneNumber,
+    employeeIdentifier: user.employeeIdentifier
+  };
 }
 
 // Test endpoint to verify JumpCloud connectivity
@@ -177,21 +198,7 @@ router.get('/users', async (req, res) => {
     });
     
     // Transform the data to match our expected format
-    const users = usersData.results.map(user => ({
-      id: user.id,
-      username: user.username,
-      email: user.email,
-      firstName: user.firstname,
-      lastName: user.lastname,
-      fullName: `${user.firstname || ''} ${user.lastname || ''}`.trim(),
-      active: user.activated,
-      created: user.created,
-      lastLogin: user.lastLogin,
-      department: user.department,
-      location: user.location,
-      phoneNumber: user.phoneNumber,
-      employeeIdentifier: user.employeeIdentifier
-    }));
+    const users = usersData.results.map(transformJumpCloudUser);
     
     res.json({
       users,
@@ -214,21 +221,7 @@ router.get('/users/:id', async (req, res) => {
     const { id } = req.params;
     const userData = await makeJumpCloudRequest(`/users/${id}`);
     
-    const user = {
-      id: userData.id,
-      username: userData.username,
-      email: userData.email,
-      firstName: userData.firstname,
-      lastName: userData.lastname,
-      fullName: `${userData.firstname || ''} ${userData.lastname || ''}`.trim(),
-      active: userData.activated,
-      created: userData.created,
-      lastLogin: userData.lastLogin,
-      department: userData.department,
-      location: userData.location,
-      phoneNumber: userData.phoneNumber,
-      employeeIdentifier: userData.employeeIdentifier
-    };
+    const user = transformJumpCloudUser(userData);
     
     res.json({
       user,
@@ -519,30 +512,55 @@ router.get('/groups/counts', async (req, res) => {
 });
 
 // Snipe-IT Integration
-const SNIPE_IT_API_BASE = process.env.SNIPE_IT_API_BASE || 'https://your-snipe-it-instance.com/api/v1';
-const SNIPE_IT_API_KEY = process.env.SNIPE_IT_API_KEY || 'your-snipe-it-api-key';
+const SNIPE_IT_API_BASE = process.env.SNIPE_IT_API_BASE;
+const SNIPE_IT_API_KEY = process.env.SNIPE_IT_API_KEY;
+
+if (!SNIPE_IT_API_BASE || !SNIPE_IT_API_KEY) {
+  console.warn('Warning: Snipe-IT API configuration is incomplete. SNIPE_IT_API_BASE and SNIPE_IT_API_KEY environment variables should be set.');
+}
 
 // Helper function to make Snipe-IT API requests
 async function makeSnipeItRequest(endpoint, params = {}) {
+  if (!SNIPE_IT_API_BASE || !SNIPE_IT_API_KEY) {
+    throw new Error('Snipe-IT API configuration is incomplete');
+  }
+
   try {
-    console.log(`Making Snipe-IT request to: ${SNIPE_IT_API_BASE}${endpoint}`);
+    const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+    const fullUrl = `${SNIPE_IT_API_BASE}${cleanEndpoint}`;
     
-    const response = await axios.get(`${SNIPE_IT_API_BASE}${endpoint}`, {
+    const response = await axios.get(fullUrl, {
       headers: {
         'Accept': 'application/json',
         'Authorization': `Bearer ${SNIPE_IT_API_KEY}`,
         'Content-Type': 'application/json'
       },
       params,
-      timeout: 10000 // 10 second timeout
+      timeout: 10000
     });
     
-    console.log(`Snipe-IT Response status: ${response.status}`);
     return response.data;
   } catch (error) {
     console.error('Snipe-IT API Error:', error.response?.status, error.response?.data || error.message);
     throw error;
   }
+}
+
+// Helper function to transform Snipe-IT asset data
+function transformSnipeItAsset(asset) {
+  return {
+    id: asset.id,
+    asset_tag: asset.asset_tag,
+    name: asset.name,
+    model: asset.model?.name || asset.model_name || 'N/A',
+    category: asset.category?.name || asset.category_name || 'N/A',
+    manufacturer: asset.manufacturer?.name || asset.manufacturer_name || 'N/A',
+    serial: asset.serial || 'N/A',
+    assigned_date: asset.assigned_to?.pivot?.assigned_at || asset.assigned_date || null,
+    location: asset.location?.name || asset.location_name || 'N/A',
+    status: asset.status_label?.name || 'N/A',
+    notes: asset.notes || ''
+  };
 }
 
 // Get available assets from Snipe-IT
@@ -669,4 +687,135 @@ router.get('/snipe/test', async (req, res) => {
   }
 });
 
+// Get assets assigned to a user from Snipe-IT
+// This function can be used by other routes
+async function getEmployeeAssetsFromSnipeIT(employeeEmail, employeeName) {
+  try {
+    // Search for user in Snipe-IT by email or name
+    let userData = null;
+    
+    // Try to find user by email first
+    try {
+      const usersResponse = await makeSnipeItRequest('/users', {
+        search: employeeEmail,
+        limit: 10
+      });
+      
+      if (usersResponse.rows && usersResponse.rows.length > 0) {
+        // Find exact match by email
+        userData = usersResponse.rows.find(user => 
+          user.email === employeeEmail || 
+          user.username === employeeEmail
+        ) || usersResponse.rows[0];
+      }
+    } catch (userError) {
+      console.log('Could not find user by email, trying by name...');
+    }
+    
+    // If not found by email, try by name
+    if (!userData) {
+      try {
+        const usersByNameResponse = await makeSnipeItRequest('/users', {
+          search: employeeName,
+          limit: 10
+        });
+        
+        if (usersByNameResponse.rows && usersByNameResponse.rows.length > 0) {
+          userData = usersByNameResponse.rows.find(user => 
+            user.name === employeeName || 
+            user.first_name + ' ' + user.last_name === employeeName
+          ) || usersByNameResponse.rows[0];
+        }
+      } catch (nameError) {
+        console.log('Could not find user by name either');
+      }
+    }
+    
+    if (!userData) {
+      console.log(`User not found in Snipe-IT: ${employeeEmail} / ${employeeName}`);
+      return [];
+    }
+    
+    // Get assets assigned to this user
+    const assetsResponse = await makeSnipeItRequest('/hardware', {
+      assigned_to: userData.id,
+      limit: 100
+    });
+    
+    const assets = (assetsResponse.rows || []).map(transformSnipeItAsset);
+    
+    return assets;
+  } catch (error) {
+    console.error('Error fetching employee assets from Snipe-IT:', error);
+    // Return empty array on error, caller can handle it
+    return [];
+  }
+}
+
+// Search users in Snipe-IT for autocomplete
+router.get('/snipe/users/search', async (req, res) => {
+  try {
+    const { query } = req.query;
+    
+    if (!query || query.length < 2) {
+      return res.json({ users: [] });
+    }
+    
+    const usersResponse = await makeSnipeItRequest('/users', {
+      search: query,
+      limit: 20
+    });
+    
+    const users = (usersResponse.rows || []).map(user => ({
+      id: user.id,
+      name: user.name || `${user.first_name || ''} ${user.last_name || ''}`.trim(),
+      email: user.email || user.username || '',
+      username: user.username || '',
+      employee_num: user.employee_num || '',
+      first_name: user.first_name || '',
+      last_name: user.last_name || '',
+      jobtitle: user.jobtitle || user.title || '',
+      department: user.department ? (user.department.name || user.department) : '',
+      location: user.location ? (user.location.name || user.location) : ''
+    }));
+    
+    res.json({ users });
+  } catch (error) {
+    console.error('Error searching users in Snipe-IT:', error);
+    res.status(500).json({ 
+      error: 'Error searching users', 
+      details: error.message,
+      users: []
+    });
+  }
+});
+
+// Get user assets from Snipe-IT
+router.get('/snipe/users/:userId/assets', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    const assetsResponse = await makeSnipeItRequest('/hardware', {
+      assigned_to: userId,
+      limit: 100
+    });
+    
+    const assets = (assetsResponse.rows || []).map(transformSnipeItAsset);
+    
+    res.json({ assets });
+  } catch (error) {
+    console.error('Error fetching user assets from Snipe-IT:', error);
+    res.status(500).json({ 
+      error: 'Error fetching assets', 
+      details: error.message,
+      assets: []
+    });
+  }
+});
+
+// Export the function for use in other routes
+router.getEmployeeAssetsFromSnipeIT = getEmployeeAssetsFromSnipeIT;
+
+// Also export the function directly for convenience
 module.exports = router;
+module.exports.getEmployeeAssetsFromSnipeIT = getEmployeeAssetsFromSnipeIT;

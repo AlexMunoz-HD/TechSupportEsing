@@ -1,4 +1,5 @@
 const express = require('express');
+const axios = require('axios');
 const { executeQuery } = require('../config/database');
 const { verifyToken, requireAuditor, logAudit } = require('../middleware/auth');
 
@@ -9,22 +10,147 @@ router.use(verifyToken);
 router.use(requireAuditor);
 router.use(logAudit);
 
-// Get dashboard statistics
+// Snipe-IT configuration
+const SNIPE_IT_API_BASE = process.env.SNIPE_IT_API_BASE || 'https://api.dev.cl.internal.xepelin.tech/v1/irt/xnipe-it';
+const SNIPE_IT_API_KEY = process.env.SNIPE_IT_API_KEY || '';
+
+// Helper function to make Snipe-IT API requests
+async function makeSnipeItRequest(endpoint, params = {}) {
+  try {
+    const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+    const fullUrl = `${SNIPE_IT_API_BASE}${cleanEndpoint}`;
+    
+    const response = await axios.get(fullUrl, {
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${SNIPE_IT_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      params,
+      timeout: 10000
+    });
+    
+    return response.data;
+  } catch (error) {
+    console.error('Snipe-IT API Error:', {
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      message: error.message
+    });
+    throw error;
+  }
+}
+
+// Get dashboard statistics from Snipe-IT
 router.get('/stats', async (req, res) => {
   try {
-    // Mock data for demonstration
-    const mockData = {
-      userStats: {
-        MX: 45,
-        CL: 32,
-        REMOTO: 28
-      },
-      assetStats: {
-        available: 25,
-        assigned: 78,
-        maintenance: 5,
-        retired: 12
-      },
+    let totalUsers = 0;
+    let availableAssets = 0;
+    let assignedAssets = 0;
+    let userStats = { MX: 0, CL: 0, REMOTO: 0 };
+    
+    try {
+      // Get total users from Snipe-IT
+      const usersResponse = await makeSnipeItRequest('/users', {
+        limit: 1,
+        offset: 0
+      });
+      totalUsers = usersResponse.total || (usersResponse.rows ? usersResponse.rows.length : 0);
+      
+      // Get all users to calculate stats by location
+      const allUsersResponse = await makeSnipeItRequest('/users', {
+        limit: 1000,
+        offset: 0
+      });
+      
+      const users = allUsersResponse.rows || [];
+      users.forEach(user => {
+        const location = user.location ? (user.location.name || user.location) : 'REMOTO';
+        if (location === 'MX' || location.includes('México') || location.includes('Mexico')) {
+          userStats.MX++;
+        } else if (location === 'CL' || location.includes('Chile')) {
+          userStats.CL++;
+        } else {
+          userStats.REMOTO++;
+        }
+      });
+      
+      // Get assets statistics from Snipe-IT
+      const assetsResponse = await makeSnipeItRequest('/hardware', {
+        limit: 1000,
+        offset: 0
+      });
+      
+      const assets = assetsResponse.rows || [];
+      console.log(`📦 Found ${assets.length} assets in Snipe-IT`);
+      
+      // Count assets by status
+      assets.forEach(asset => {
+        const statusLabel = asset.status_label || {};
+        const status = statusLabel.status_meta || statusLabel.name || '';
+        const statusName = statusLabel.name || '';
+        const statusId = statusLabel.id;
+        
+        // Available assets (Ready to Deploy, Available, etc.)
+        // Check multiple conditions for available assets
+        const isAvailable = 
+          status === 'ready to deploy' || 
+          status === 'deployable' ||
+          statusId === 1 || // Common ID for "Ready to Deploy"
+          statusName?.toLowerCase().includes('ready') ||
+          statusName?.toLowerCase().includes('available') ||
+          statusName?.toLowerCase().includes('disponible') ||
+          statusName?.toLowerCase().includes('deployable');
+        
+        if (isAvailable && !asset.assigned_to) {
+          availableAssets++;
+        }
+        
+        // Assigned assets (Deployed, Assigned, etc.)
+        // Check if asset is assigned to someone
+        const isAssigned = 
+          asset.assigned_to !== null && asset.assigned_to !== undefined ||
+          asset.assigned_to_id !== null && asset.assigned_to_id !== undefined ||
+          status === 'deployed' ||
+          statusId === 2 || // Common ID for "Deployed"
+          statusName?.toLowerCase().includes('deployed') ||
+          statusName?.toLowerCase().includes('assigned') ||
+          statusName?.toLowerCase().includes('asignado');
+        
+        if (isAssigned) {
+          assignedAssets++;
+        }
+      });
+      
+      console.log(`📊 Assets counted - Available: ${availableAssets}, Assigned: ${assignedAssets}`);
+      
+      console.log('✅ Snipe-IT stats loaded:', {
+        totalUsers,
+        availableAssets,
+        assignedAssets,
+        userStats
+      });
+      
+    } catch (snipeError) {
+      console.error('❌ Error fetching data from Snipe-IT:', snipeError.message);
+      console.error('❌ Error stack:', snipeError.stack);
+      // Fallback to default values if Snipe-IT fails
+      // Keep the values at 0 but log the error for debugging
+      if (totalUsers === 0 && availableAssets === 0 && assignedAssets === 0) {
+        console.warn('⚠️ All values are 0, this might indicate a connection issue with Snipe-IT');
+      }
+    }
+    
+    const assetStats = {
+      available: availableAssets,
+      assigned: assignedAssets,
+      maintenance: 0,
+      retired: 0
+    };
+    
+    const dashboardData = {
+      userStats: userStats,
+      assetStats: assetStats,
       recentLogs: [
         {
           id: 1,
@@ -89,10 +215,24 @@ router.get('/stats', async (req, res) => {
           full_name: 'Admin User',
           username: 'admin'
         }
-      ]
+      ],
+      source: 'Snipe-IT',
+      totalUsers: totalUsers,
+      _debug: {
+        usersFetched: totalUsers > 0,
+        assetsFetched: (availableAssets + assignedAssets) > 0,
+        timestamp: new Date().toISOString()
+      }
     };
 
-    res.json(mockData);
+    console.log('📤 Sending dashboard data:', {
+      totalUsers,
+      availableAssets,
+      assignedAssets,
+      userStats
+    });
+
+    res.json(dashboardData);
 
   } catch (error) {
     console.error('Dashboard stats error:', error);

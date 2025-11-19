@@ -216,6 +216,14 @@ class TechSupportApp {
                 this.fixOnboardingSectionPosition(targetSection);
             } else if (sectionId === 'offboarding-section') {
                 this.fixOffboardingSectionPosition(targetSection);
+            } else if (sectionId === 'calendar-section') {
+                // Inicializar calendario cuando se muestra
+                setTimeout(() => {
+                    if (window.calendarManager) {
+                        window.calendarManager.loadEvents();
+                        window.calendarManager.renderCalendar();
+                    }
+                }, 100);
             } else if (sectionId === 'profile-section') {
                 createProfileOverlay();
             }
@@ -251,25 +259,10 @@ class TechSupportApp {
 
     // Global function to load responsibility letters
     loadResponsibilityLetters() {
-        console.log('Current section before:', this.currentSection);
-        
-        // Ensure section is visible first
         const responsibilitySection = document.getElementById('responsibility-section');
         if (responsibilitySection) {
-            console.log('Responsibility section found:', responsibilitySection);
-            console.log('Current classes:', responsibilitySection.className);
-            console.log('Current styles:', {
-                display: responsibilitySection.style.display,
-                opacity: responsibilitySection.style.opacity,
-                visibility: responsibilitySection.style.visibility,
-                position: responsibilitySection.style.position,
-                zIndex: responsibilitySection.style.zIndex
-            });
-            
-            // Check and fix immediate parent if it's hidden
             const immediateParent = responsibilitySection.parentElement;
             if (immediateParent && immediateParent.classList.contains('hidden')) {
-                console.log('Removing hidden class from immediate parent:', immediateParent.className);
                 immediateParent.classList.remove('hidden');
                 immediateParent.style.display = 'block';
                 immediateParent.style.opacity = '1';
@@ -284,50 +277,16 @@ class TechSupportApp {
             responsibilitySection.style.zIndex = '999';
             responsibilitySection.style.height = 'auto';
             responsibilitySection.style.minHeight = '100vh';
-            
-            console.log('After changes - classes:', responsibilitySection.className);
-            console.log('After changes - styles:', {
-                display: responsibilitySection.style.display,
-                opacity: responsibilitySection.style.opacity,
-                visibility: responsibilitySection.style.visibility,
-                position: responsibilitySection.style.position,
-                zIndex: responsibilitySection.style.zIndex,
-                height: responsibilitySection.style.height,
-                minHeight: responsibilitySection.style.minHeight
-            });
-            console.log('Responsibility section made visible');
-            
-            // Check if section is actually visible
-            setTimeout(() => {
-                const rect = responsibilitySection.getBoundingClientRect();
-                console.log('Section bounding rect:', rect);
-                console.log('Section is visible:', rect.width > 0 && rect.height > 0);
-                
-                // Check if any element is covering this section
-                const elementsAtCenter = document.elementsFromPoint(
-                    rect.left + rect.width / 2, 
-                    rect.top + rect.height / 2
-                );
-            }, 100);
         } else {
             console.error('Responsibility section NOT FOUND in DOM!');
         }
         
-        // Load data
         if (window.responsibilityManager) {
-            console.log('ResponsibilityManager exists, calling loadLetters...');
             window.responsibilityManager.loadLetters();
-        } else {
-            console.log('ResponsibilityManager not found, trying to initialize...');
-            if (window.ResponsibilityManager) {
-                console.log('ResponsibilityManager class available, creating instance...');
-                window.responsibilityManager = new window.ResponsibilityManager();
-                window.responsibilityManager.loadLetters();
-            } else {
-                console.log('ResponsibilityManager class not available');
-            }
+        } else if (window.ResponsibilityManager) {
+            window.responsibilityManager = new window.ResponsibilityManager();
+            window.responsibilityManager.loadLetters();
         }
-        console.log('Current section after:', this.currentSection);
     }
 
     // Load section-specific data
@@ -345,6 +304,11 @@ class TechSupportApp {
                     loadAuditLogs();
                 }
                 break;
+            case 'calendar-section':
+                if (window.calendarManager) {
+                    window.calendarManager.loadEvents();
+                }
+                break;
             case 'responsibility-section':
                 
                 // Force responsibility section visibility
@@ -354,11 +318,17 @@ class TechSupportApp {
                     responsibilitySection.style.display = 'block';
                     responsibilitySection.style.opacity = '1';
                     responsibilitySection.style.visibility = 'visible';
-                    console.log('Forced responsibility section visibility');
                 }
                 
                 // Don't load data here - let the onclick handler do it
-                console.log('Responsibility section visibility set, data loading handled by onclick');
+                break;
+            case 'onboarding-section':
+                if (window.onboardingManager && !window.onboardingManager.isLoading) {
+                    window.onboardingManager.loadProcesses();
+                } else if (window.OnboardingManager && !window.onboardingManager) {
+                    window.onboardingManager = new window.OnboardingManager();
+                    window.onboardingManager.loadProcesses();
+                }
                 break;
             case 'offboarding-section':
                 if (window.offboardingManager) {
@@ -492,11 +462,22 @@ class TechSupportApp {
         // Create the audit content
         auditContainer.innerHTML = `
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <div class="bg-white rounded-lg shadow card-shadow">
-                    <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-                        <h3 class="text-lg font-medium text-gray-900">Log de Auditoría</h3>
-                        <button onclick="exportAuditLogs()" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition duration-200">
-                            <i class="fas fa-download mr-2"></i>Exportar
+                <!-- Header Apple Style -->
+                <div class="mb-12 relative">
+                    <div class="content-card bg-white rounded-3xl p-12 border" style="border-color: rgba(0,0,0,0.06); box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h1 class="text-5xl font-semibold mb-3" style="color: #1d1d1f; letter-spacing: -0.02em;">Log de Auditoría</h1>
+                                <p class="text-lg" style="color: #86868b; font-weight: 400;">Registro de todas las acciones del sistema</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="content-card bg-white rounded-3xl overflow-hidden border" style="border-color: rgba(0,0,0,0.06); box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+                    <div class="px-8 py-6 border-b flex justify-between items-center" style="border-color: #f5f5f7;">
+                        <h3 class="text-2xl font-semibold" style="color: #1d1d1f; letter-spacing: -0.02em;">Registros de Auditoría</h3>
+                        <button onclick="exportAuditLogs()" class="px-6 py-3 rounded-full flex items-center transition-all duration-200" style="background: #1d1d1f; color: white; font-weight: 500; font-size: 15px; letter-spacing: -0.01em;" onmouseover="this.style.background='#2d2d2f'" onmouseout="this.style.background='#1d1d1f'">
+                            <i class="fas fa-download mr-2 text-sm"></i>Exportar
                         </button>
                     </div>
                     <div class="p-6">
@@ -595,7 +576,6 @@ class TechSupportApp {
             // Create a completely new onboarding section outside everything
             const existingOnboardingSection = document.getElementById('onboarding-section');
             if (existingOnboardingSection) {
-                console.log('🗑️ Removing existing onboarding section');
                 existingOnboardingSection.remove();
             }
             
@@ -898,7 +878,6 @@ class TechSupportApp {
                 } else if (window.onboardingManager) {
                     window.onboardingManager.loadOnboarding();
                 } else {
-                    console.log('⚠️ No onboarding loader found');
                 }
             }, 100);
 
@@ -1045,10 +1024,8 @@ document.addEventListener('DOMContentLoaded', function() {
 // Load onboarding processes (fallback function)
 function loadOnboarding() {
     if (window.onboardingManager) {
-        console.log('OnboardingManager found in fallback, calling loadProcesses...');
         window.onboardingManager.loadProcesses();
     } else {
-        console.log('OnboardingManager not found in fallback, trying to create...');
         if (window.OnboardingManager) {
             window.onboardingManager = new window.OnboardingManager();
             window.onboardingManager.loadProcesses();
@@ -1062,10 +1039,8 @@ function loadOnboarding() {
 // Load offboarding processes (fallback function)
 function loadOffboarding() {
     if (window.offboardingManager) {
-        console.log('OffboardingManager found in fallback, calling loadProcesses...');
         window.offboardingManager.loadProcesses();
     } else {
-        console.log('OffboardingManager not found in fallback, trying to create...');
         if (window.OffboardingManager) {
             window.offboardingManager = new window.OffboardingManager();
             window.offboardingManager.loadProcesses();
@@ -1150,7 +1125,7 @@ function createOnboardingOverlay() {
         top: 64px !important;
         left: 0 !important;
         z-index: 10 !important;
-        background: white !important;
+        background: #fbfbfd !important;
         padding: 20px !important;
         overflow-y: auto !important;
         overflow-x: hidden !important;
@@ -1159,118 +1134,175 @@ function createOnboardingOverlay() {
     // Crear el contenido completo con diseño mejorado
     onboardingContainer.innerHTML = `
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <!-- Header with Gradient -->
-            <div class="mb-8 relative">
-                <div class="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-8 text-white shadow-xl">
+            <!-- Header Apple Style -->
+            <div class="mb-12 relative">
+                <div class="content-card bg-white rounded-3xl p-12 border" style="border-color: rgba(0,0,0,0.06); box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
                     <div class="flex items-center justify-between">
                         <div>
-                            <h1 class="text-4xl font-bold mb-2">🚀 Procesos de Onboarding</h1>
-                            <p class="text-blue-100 text-lg">Gestiona el proceso de incorporación de nuevos empleados</p>
+                            <h1 class="text-5xl font-semibold mb-3" style="color: #1d1d1f; letter-spacing: -0.02em;">Procesos de Onboarding</h1>
+                            <p class="text-lg" style="color: #86868b; font-weight: 400;">Gestiona el proceso de incorporación de nuevos empleados</p>
                         </div>
                         <div class="hidden md:block">
-                            <div class="w-20 h-20 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-                                <i class="fas fa-user-plus text-3xl text-white"></i>
+                            <div class="w-24 h-24 rounded-full flex items-center justify-center" style="background: linear-gradient(135deg, #f5f5f7 0%, #ffffff 100%);">
+                                <i class="fas fa-user-plus text-3xl" style="color: #0071e3;"></i>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Enhanced Stats Cards -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-blue-200">
+            <!-- Stats Cards Apple Style -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+                <div class="stats-card bg-white rounded-3xl border" style="border-color: rgba(0,0,0,0.06); box-shadow: 0 1px 3px rgba(0,0,0,0.04); padding: 2.25rem;">
                     <div class="flex items-center justify-between">
                         <div>
-                            <p class="text-sm font-medium text-blue-600 mb-1">Pendientes</p>
-                            <p class="text-3xl font-bold text-blue-800">12</p>
-                            <p class="text-xs text-blue-500 mt-1">Esperando inicio</p>
+                            <p class="text-sm font-medium mb-2.5" style="color: #86868b; letter-spacing: 0.01em;">Total</p>
+                            <p class="text-4xl font-semibold mb-1" style="color: #1d1d1f; letter-spacing: -0.03em;" id="totalOnboarding">0</p>
+                            <p class="text-xs mt-1.5" style="color: #86868b;">Procesos totales</p>
                         </div>
-                        <div class="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center shadow-lg">
-                            <i class="fas fa-clock text-white text-lg"></i>
+                        <div class="w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-300" style="background: #f5f5f7;">
+                            <i class="fas fa-list text-lg" style="color: #0071e3;"></i>
                         </div>
                     </div>
                 </div>
                 
-                <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-green-200">
+                <div class="stats-card bg-white rounded-3xl border" style="border-color: rgba(0,0,0,0.06); box-shadow: 0 1px 3px rgba(0,0,0,0.04); padding: 2.25rem;">
                     <div class="flex items-center justify-between">
                         <div>
-                            <p class="text-sm font-medium text-green-600 mb-1">Enviadas</p>
-                            <p class="text-3xl font-bold text-green-800">8</p>
-                            <p class="text-xs text-green-500 mt-1">En proceso</p>
+                            <p class="text-sm font-medium mb-2.5" style="color: #86868b; letter-spacing: 0.01em;">En Progreso</p>
+                            <p class="text-4xl font-semibold mb-1" style="color: #1d1d1f; letter-spacing: -0.03em;" id="inProgressOnboarding">0</p>
+                            <p class="text-xs mt-1.5" style="color: #86868b;">Activos</p>
                         </div>
-                        <div class="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center shadow-lg">
-                            <i class="fas fa-paper-plane text-white text-lg"></i>
+                        <div class="w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-300" style="background: #f5f5f7;">
+                            <svg class="flaticon-icon text-lg animate-spin" style="width: 1.125rem; height: 1.125rem; color: #30d158;" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="32" stroke-dashoffset="32">
+                                    <animate attributeName="stroke-dasharray" dur="2s" values="0 40;40 40;40 40;40 40;0 40" repeatCount="indefinite"/>
+                                    <animate attributeName="stroke-dashoffset" dur="2s" values="0;-40;-80;-120;-160" repeatCount="indefinite"/>
+                                </circle>
+                            </svg>
                         </div>
                     </div>
                 </div>
                 
-                <div class="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-yellow-200">
+                <div class="stats-card bg-white rounded-3xl border" style="border-color: rgba(0,0,0,0.06); box-shadow: 0 1px 3px rgba(0,0,0,0.04); padding: 2.25rem;">
                     <div class="flex items-center justify-between">
                         <div>
-                            <p class="text-sm font-medium text-yellow-600 mb-1">No Firmadas</p>
-                            <p class="text-3xl font-bold text-yellow-800">5</p>
-                            <p class="text-xs text-yellow-500 mt-1">Requieren atención</p>
+                            <p class="text-sm font-medium mb-2.5" style="color: #86868b; letter-spacing: 0.01em;">Completados</p>
+                            <p class="text-4xl font-semibold mb-1" style="color: #1d1d1f; letter-spacing: -0.03em;" id="completedOnboarding">0</p>
+                            <p class="text-xs mt-1.5" style="color: #86868b;">Finalizados</p>
                         </div>
-                        <div class="w-12 h-12 bg-yellow-500 rounded-xl flex items-center justify-center shadow-lg">
-                            <i class="fas fa-exclamation-triangle text-white text-lg"></i>
+                        <div class="w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-300" style="background: #f5f5f7;">
+                            <i class="fas fa-check-circle text-lg" style="color: #30d158;"></i>
                         </div>
                     </div>
                 </div>
                 
-                <div class="bg-gradient-to-br from-red-50 to-red-100 rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-red-200">
+                <div class="stats-card bg-white rounded-3xl border" style="border-color: rgba(0,0,0,0.06); box-shadow: 0 1px 3px rgba(0,0,0,0.04); padding: 2.25rem;">
                     <div class="flex items-center justify-between">
                         <div>
-                            <p class="text-sm font-medium text-red-600 mb-1">Atrasadas</p>
-                            <p class="text-3xl font-bold text-red-800">3</p>
-                            <p class="text-xs text-red-500 mt-1">Urgente</p>
+                            <p class="text-sm font-medium mb-2.5" style="color: #86868b; letter-spacing: 0.01em;">Esta Semana</p>
+                            <p class="text-4xl font-semibold mb-1" style="color: #1d1d1f; letter-spacing: -0.03em;" id="thisWeekOnboarding">0</p>
+                            <p class="text-xs mt-1.5" style="color: #86868b;">Nuevos</p>
                         </div>
-                        <div class="w-12 h-12 bg-red-500 rounded-xl flex items-center justify-center shadow-lg">
-                            <i class="fas fa-exclamation-circle text-white text-lg"></i>
+                        <div class="w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-300" style="background: #f5f5f7;">
+                            <svg class="flaticon-icon text-lg" style="width: 1.125rem; height: 1.125rem; color: #ff9500;" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <line x1="16" y1="2" x2="16" y2="6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <line x1="8" y1="2" x2="8" y2="6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <line x1="3" y1="10" x2="21" y2="10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Enhanced Actions Bar -->
-            <div class="bg-white rounded-2xl shadow-lg p-6 mb-6 border border-gray-100">
-                <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                    <div class="flex flex-wrap items-center gap-3">
-                        <button onclick="createNewOnboarding()" class="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 flex items-center shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
-                            <i class="fas fa-plus mr-2"></i>
+            <!-- Actions Bar Apple Style -->
+            <div class="content-card bg-white rounded-3xl p-8 mb-8 border" style="border-color: rgba(0,0,0,0.06); box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+                <div class="flex flex-row items-center justify-between gap-6 flex-wrap">
+                    <div class="flex flex-row flex-wrap items-center gap-3">
+                        <button onclick="createNewOnboarding()" class="px-6 py-3 rounded-full flex items-center whitespace-nowrap transition-all duration-200" style="background: #1d1d1f; color: white; font-weight: 500; font-size: 15px; letter-spacing: -0.01em;" onmouseover="this.style.background='#2d2d2f'" onmouseout="this.style.background='#1d1d1f'">
+                            <svg class="flaticon-icon mr-2 text-sm" style="width: 0.875rem; height: 0.875rem;" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
                             Nuevo Onboarding
                         </button>
-                        <button onclick="exportOnboarding()" class="bg-gradient-to-r from-green-600 to-green-700 text-white px-6 py-3 rounded-xl hover:from-green-700 hover:to-green-800 transition-all duration-200 flex items-center shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
-                            <i class="fas fa-download mr-2"></i>
+                        <button onclick="exportOnboarding()" class="px-6 py-3 rounded-full flex items-center whitespace-nowrap transition-all duration-200" style="background: #1d1d1f; color: white; font-weight: 500; font-size: 15px; letter-spacing: -0.01em;" onmouseover="this.style.background='#2d2d2f'" onmouseout="this.style.background='#1d1d1f'">
+                            <svg class="flaticon-icon mr-2 text-sm" style="width: 0.875rem; height: 0.875rem;" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <polyline points="7 10 12 15 17 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <line x1="12" y1="15" x2="12" y2="3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
                             Exportar
                         </button>
-                        <button onclick="bulkActions()" class="bg-gradient-to-r from-purple-600 to-purple-700 text-white px-6 py-3 rounded-xl hover:from-purple-700 hover:to-purple-800 transition-all duration-200 flex items-center shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
-                            <i class="fas fa-tasks mr-2"></i>
+                        <button onclick="bulkActions()" class="px-6 py-3 rounded-full flex items-center whitespace-nowrap transition-all duration-200" style="background: #1d1d1f; color: white; font-weight: 500; font-size: 15px; letter-spacing: -0.01em;" onmouseover="this.style.background='#2d2d2f'" onmouseout="this.style.background='#1d1d1f'">
+                            <svg class="flaticon-icon mr-2 text-sm" style="width: 0.875rem; height: 0.875rem;" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <rect x="3" y="3" width="7" height="7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <rect x="14" y="3" width="7" height="7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <rect x="14" y="14" width="7" height="7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <rect x="3" y="14" width="7" height="7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
                             Acciones Masivas
+                        </button>
+                        <button onclick="generateOnboardingPDF()" class="px-6 py-3 rounded-full flex items-center whitespace-nowrap transition-all duration-200" style="background: #1d1d1f; color: white; font-weight: 500; font-size: 15px; letter-spacing: -0.01em;" onmouseover="this.style.background='#2d2d2f'" onmouseout="this.style.background='#1d1d1f'">
+                            <svg class="flaticon-icon mr-2 text-sm" style="width: 0.875rem; height: 0.875rem;" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <polyline points="14 2 14 8 20 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            Nuevo Onboarding PDF
+                        </button>
+                        <button onclick="openPDFEditor()" class="px-6 py-3 rounded-full flex items-center whitespace-nowrap transition-all duration-200" style="background: #1d1d1f; color: white; font-weight: 500; font-size: 15px; letter-spacing: -0.01em;" onmouseover="this.style.background='#2d2d2f'" onmouseout="this.style.background='#1d1d1f'">
+                            <svg class="flaticon-icon mr-2 text-sm" style="width: 0.875rem; height: 0.875rem;" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            Editar Template PDF
                         </button>
                     </div>
                     <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
                         <div class="relative">
-                            <input type="text" placeholder="Buscar empleado..." class="w-full sm:w-64 pl-10 pr-4 py-3 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm">
-                            <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                            <input type="text" id="onboardingSearch" placeholder="Buscar empleado..." class="w-full sm:w-64 pl-10 pr-4 py-3 rounded-full text-sm focus:outline-none" style="background: #f5f5f7; border: 1px solid #d2d2d7; color: #1d1d1f; font-size: 15px;" onfocus="this.style.background='white'; this.style.borderColor='#0071e3'" onblur="this.style.background='#f5f5f7'; this.style.borderColor='#d2d2d7'">
+                            <svg class="flaticon-icon absolute left-3 top-1/2 transform -translate-y-1/2" style="width: 0.875rem; height: 0.875rem; color: #86868b;" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="m21 21-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
                         </div>
-                        <select class="px-4 py-3 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm">
+                        <select id="statusOnboardingFilter" class="px-4 py-3 rounded-full text-sm focus:outline-none" style="background: #f5f5f7; border: 1px solid #d2d2d7; color: #1d1d1f; font-size: 15px;" onfocus="this.style.background='white'; this.style.borderColor='#0071e3'" onblur="this.style.background='#f5f5f7'; this.style.borderColor='#d2d2d7'">
                             <option value="">Todos los estados</option>
                             <option value="pending">Pendientes</option>
-                            <option value="sent">Enviadas</option>
-                            <option value="unsigned">No Firmadas</option>
-                            <option value="overdue">Atrasadas</option>
+                            <option value="in_progress">En Progreso</option>
+                            <option value="completed">Completados</option>
+                            <option value="cancelled">Cancelados</option>
+                        </select>
+                        <select id="locationOnboardingFilter" class="px-4 py-3 rounded-full text-sm focus:outline-none" style="background: #f5f5f7; border: 1px solid #d2d2d7; color: #1d1d1f; font-size: 15px;" onfocus="this.style.background='white'; this.style.borderColor='#0071e3'" onblur="this.style.background='#f5f5f7'; this.style.borderColor='#d2d2d7'">
+                            <option value="">Todas las ubicaciones</option>
+                            <option value="MX">México</option>
+                            <option value="CL">Chile</option>
+                            <option value="REMOTO">Remoto</option>
+                        </select>
+                        <select id="departmentOnboardingFilter" class="px-4 py-3 rounded-full text-sm focus:outline-none" style="background: #f5f5f7; border: 1px solid #d2d2d7; color: #1d1d1f; font-size: 15px;" onfocus="this.style.background='white'; this.style.borderColor='#0071e3'" onblur="this.style.background='#f5f5f7'; this.style.borderColor='#d2d2d7'">
+                            <option value="">Todos los departamentos</option>
+                            <option value="IT">IT</option>
+                            <option value="Engineering">Engineering</option>
+                            <option value="Product">Product</option>
+                            <option value="Sales">Sales</option>
+                            <option value="Finance">Finance</option>
+                            <option value="Operations">Operations</option>
                         </select>
                     </div>
                 </div>
             </div>
 
-            <!-- Enhanced Onboarding Table -->
-            <div class="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100">
-                <div class="px-6 py-4 bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
-                    <h3 class="text-lg font-semibold text-gray-800 flex items-center">
-                        <i class="fas fa-table mr-2 text-blue-600"></i>
-                        Lista de Procesos de Onboarding
-                    </h3>
+            <!-- Onboarding Table Apple Style -->
+            <div class="content-card bg-white rounded-3xl overflow-hidden border" style="border-color: rgba(0,0,0,0.06); box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+                <div class="px-8 py-6 border-b" style="border-color: #f5f5f7;">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-2xl font-semibold flex items-center" style="color: #1d1d1f; letter-spacing: -0.02em;">
+                            <i class="fas fa-table mr-3" style="color: #0071e3;"></i>
+                            Lista de Procesos de Onboarding
+                        </h3>
+                        <span id="onboardingCount" class="text-sm font-medium" style="color: #86868b;">Mostrando 0 procesos</span>
+                    </div>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200">
@@ -1284,14 +1316,32 @@ function createOnboardingOverlay() {
                                 </th>
                                 <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                                     <div class="flex items-center">
-                                        <i class="fas fa-calendar mr-2 text-gray-400"></i>
-                                        Fecha Inicio
+                                        <i class="fas fa-briefcase mr-2 text-gray-400"></i>
+                                        Posición
+                                    </div>
+                                </th>
+                                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-building mr-2 text-gray-400"></i>
+                                        Departamento
+                                    </div>
+                                </th>
+                                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-globe mr-2 text-gray-400"></i>
+                                        País
                                     </div>
                                 </th>
                                 <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                                     <div class="flex items-center">
                                         <i class="fas fa-flag mr-2 text-gray-400"></i>
                                         Estado
+                                    </div>
+                                </th>
+                                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-calendar mr-2 text-gray-400"></i>
+                                        Fecha Inicio
                                     </div>
                                 </th>
                                 <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
@@ -1308,100 +1358,40 @@ function createOnboardingOverlay() {
                                 </th>
                             </tr>
                         </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
-                            <tr class="hover:bg-blue-50 transition-colors duration-200">
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="flex items-center">
-                                        <div class="flex-shrink-0 h-12 w-12">
-                                            <div class="h-12 w-12 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center shadow-lg">
-                                                <span class="text-sm font-bold text-white">JD</span>
-                                            </div>
-                                        </div>
-                                        <div class="ml-4">
-                                            <div class="text-sm font-semibold text-gray-900">Juan Díaz</div>
-                                            <div class="text-sm text-gray-500">juan.diaz@empresa.com</div>
-                                            <div class="text-xs text-blue-600 font-medium">Desarrollador Senior</div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="text-sm font-medium text-gray-900">15/01/2025</div>
-                                    <div class="text-xs text-gray-500">Hace 3 días</div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="inline-flex px-3 py-1 text-xs font-semibold rounded-full bg-gradient-to-r from-yellow-100 to-yellow-200 text-yellow-800 border border-yellow-300">
-                                        <i class="fas fa-clock mr-1"></i>
-                                        Pendiente
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="flex items-center">
-                                        <div class="w-full bg-gray-200 rounded-full h-3 mr-3">
-                                            <div class="bg-gradient-to-r from-blue-500 to-blue-600 h-3 rounded-full shadow-sm" style="width: 60%"></div>
-                                        </div>
-                                        <span class="text-sm font-semibold text-gray-700">60%</span>
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                    <div class="flex items-center space-x-2">
-                                        <button onclick="viewOnboarding(1)" class="bg-blue-100 text-blue-700 px-3 py-1 rounded-lg hover:bg-blue-200 transition-colors duration-200 text-xs font-medium">
-                                            <i class="fas fa-eye mr-1"></i>Ver
-                                        </button>
-                                        <button onclick="editOnboarding(1)" class="bg-green-100 text-green-700 px-3 py-1 rounded-lg hover:bg-green-200 transition-colors duration-200 text-xs font-medium">
-                                            <i class="fas fa-edit mr-1"></i>Editar
-                                        </button>
-                                        <button onclick="sendReminder(1)" class="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-lg hover:bg-yellow-200 transition-colors duration-200 text-xs font-medium">
-                                            <i class="fas fa-bell mr-1"></i>Recordar
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr class="hover:bg-green-50 transition-colors duration-200">
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="flex items-center">
-                                        <div class="flex-shrink-0 h-12 w-12">
-                                            <div class="h-12 w-12 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center shadow-lg">
-                                                <span class="text-sm font-bold text-white">MR</span>
-                                            </div>
-                                        </div>
-                                        <div class="ml-4">
-                                            <div class="text-sm font-semibold text-gray-900">María Rodríguez</div>
-                                            <div class="text-sm text-gray-500">maria.rodriguez@empresa.com</div>
-                                            <div class="text-xs text-green-600 font-medium">Diseñadora UX</div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="text-sm font-medium text-gray-900">10/01/2025</div>
-                                    <div class="text-xs text-gray-500">Hace 8 días</div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="inline-flex px-3 py-1 text-xs font-semibold rounded-full bg-gradient-to-r from-green-100 to-green-200 text-green-800 border border-green-300">
-                                        <i class="fas fa-check-circle mr-1"></i>
-                                        Completado
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="flex items-center">
-                                        <div class="w-full bg-gray-200 rounded-full h-3 mr-3">
-                                            <div class="bg-gradient-to-r from-green-500 to-green-600 h-3 rounded-full shadow-sm" style="width: 100%"></div>
-                                        </div>
-                                        <span class="text-sm font-semibold text-gray-700">100%</span>
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                    <div class="flex items-center space-x-2">
-                                        <button onclick="viewOnboarding(2)" class="bg-blue-100 text-blue-700 px-3 py-1 rounded-lg hover:bg-blue-200 transition-colors duration-200 text-xs font-medium">
-                                            <i class="fas fa-eye mr-1"></i>Ver
-                                        </button>
-                                        <button onclick="downloadCertificate(2)" class="bg-green-100 text-green-700 px-3 py-1 rounded-lg hover:bg-green-200 transition-colors duration-200 text-xs font-medium">
-                                            <i class="fas fa-certificate mr-1"></i>Certificado
-                                        </button>
+                        <tbody id="onboardingTableBody" class="bg-white divide-y divide-gray-200">
+                            <tr>
+                                <td colspan="8" class="px-6 py-12 text-center text-gray-500">
+                                    <div class="flex flex-col items-center">
+                                        <i class="fas fa-spinner fa-spin text-4xl text-gray-300 mb-4"></i>
+                                        <p class="text-lg font-medium text-gray-900 mb-2">Cargando procesos de onboarding...</p>
+                                        <p class="text-sm text-gray-400">Por favor espera...</p>
                                     </div>
                                 </td>
                             </tr>
                         </tbody>
                     </table>
+                </div>
+            </div>
+            
+            <!-- Pagination -->
+            <div id="onboardingPagination" class="px-6 py-4 border-t border-gray-200 flex items-center justify-between bg-white rounded-b-2xl">
+                <div class="flex items-center text-sm text-gray-700">
+                    <span id="onboardingPaginationInfo">Mostrando 0 de 0 procesos</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <button id="onboardingPrevPage" onclick="onboardingManager.previousPage()" disabled class="px-3 py-1 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <svg class="flaticon-icon" style="width: 1rem; height: 1rem;" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <polyline points="15 18 9 12 15 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
+                    <div id="onboardingPageNumbers" class="flex space-x-1">
+                        <!-- Page numbers will be populated here -->
+                    </div>
+                    <button id="onboardingNextPage" onclick="onboardingManager.nextPage()" disabled class="px-3 py-1 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <svg class="flaticon-icon" style="width: 1rem; height: 1rem;" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <polyline points="9 18 15 12 9 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
                 </div>
             </div>
         </div>
@@ -1415,14 +1405,1138 @@ function createOnboardingOverlay() {
         onboardingContainer.remove();
         closeButton.remove();
     };
+    
+    // Load onboarding processes if OnboardingManager is available
+    // Solo cargar una vez, no en múltiples timeouts
+    if (window.onboardingManager) {
+        console.log('🔄 Re-initializing OnboardingManager event listeners...');
+        // Re-setup event listeners for the new DOM elements
+        window.onboardingManager.setupEventListeners();
+        // NO cargar procesos aquí - ya se cargan cuando se muestra la sección
+    }
 
     // Agregar funciones globales
     window.createNewOnboarding = function() {
-        alert('Función: Crear nuevo proceso de onboarding');
+        console.log('➕ Creando nuevo proceso de onboarding...');
+        
+        // Remover modal existente si existe
+        const existingModal = document.getElementById('modal-nuevo-onboarding');
+        if (existingModal) {
+            existingModal.remove();
+        }
+        
+        // Crear el modal
+        const modal = document.createElement('div');
+        modal.id = 'modal-nuevo-onboarding';
+        modal.style.cssText = `
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            background: rgba(0, 0, 0, 0.5) !important;
+            z-index: 10000000 !important;
+            display: flex !important;
+            justify-content: center !important;
+            align-items: center !important;
+            font-family: Arial, sans-serif !important;
+        `;
+        
+        modal.innerHTML = `
+            <div style="
+                background: white !important;
+                border-radius: 12px !important;
+                padding: 30px !important;
+                max-width: 600px !important;
+                width: 90% !important;
+                max-height: 90vh !important;
+                overflow-y: auto !important;
+                box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+                border: 1px solid #E5E7EB !important;
+            ">
+                <!-- Header -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 2px solid #E5E7EB;">
+                    <h2 style="color: #1F2937; font-size: 24px; font-weight: bold; margin: 0;">
+                        ➕ Crear Nuevo Proceso de Onboarding
+                    </h2>
+                    <button onclick="window.cerrarModalNuevoOnboarding()" style="
+                        background: #EF4444 !important;
+                        color: white !important;
+                        border: none !important;
+                        padding: 8px 12px !important;
+                        border-radius: 6px !important;
+                        cursor: pointer !important;
+                        font-size: 16px !important;
+                        font-weight: bold !important;
+                    ">✕</button>
+                </div>
+                
+                <!-- Form -->
+                <form id="form-nuevo-onboarding" style="display: flex; flex-direction: column; gap: 20px;">
+                    <div style="position: relative;">
+                        <label style="display: block; color: #374151; font-weight: bold; margin-bottom: 8px; font-size: 14px;">
+                            🆔 ID de Empleado *
+                        </label>
+                        <input type="text" id="new-employee-id" placeholder="Ingresa el ID del empleado..." autocomplete="off" style="
+                            width: 100% !important;
+                            padding: 12px !important;
+                            border: 2px solid #D1D5DB !important;
+                            border-radius: 8px !important;
+                            font-size: 14px !important;
+                            box-sizing: border-box !important;
+                        " required>
+                        <div id="employee-autocomplete-dropdown" style="
+                            position: absolute !important;
+                            top: 100% !important;
+                            left: 0 !important;
+                            right: 0 !important;
+                            background: white !important;
+                            border: 2px solid #D1D5DB !important;
+                            border-top: none !important;
+                            border-radius: 0 0 8px 8px !important;
+                            max-height: 300px !important;
+                            overflow-y: auto !important;
+                            z-index: 10000001 !important;
+                            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
+                            display: none !important;
+                        "></div>
+                    </div>
+                    
+                    <div>
+                        <label style="display: block; color: #374151; font-weight: bold; margin-bottom: 8px; font-size: 14px;">
+                            👤 Nombre del Empleado
+                        </label>
+                        <input type="text" id="new-employee-name" placeholder="Se llenará automáticamente..." autocomplete="off" style="
+                            width: 100% !important;
+                            padding: 12px !important;
+                            border: 2px solid #D1D5DB !important;
+                            border-radius: 8px !important;
+                            font-size: 14px !important;
+                            box-sizing: border-box !important;
+                        ">
+                    </div>
+                    
+                    <div>
+                        <label style="display: block; color: #374151; font-weight: bold; margin-bottom: 8px; font-size: 14px;">
+                            📧 Email
+                        </label>
+                        <input type="email" id="new-employee-email" placeholder="Se generará automáticamente..." readonly style="
+                            width: 100% !important;
+                            padding: 12px !important;
+                            border: 2px solid #D1D5DB !important;
+                            border-radius: 8px !important;
+                            font-size: 14px !important;
+                            box-sizing: border-box !important;
+                            background-color: #F3F4F6 !important;
+                            cursor: not-allowed !important;
+                        ">
+                        <small style="color: #6B7280; font-size: 12px; margin-top: 4px; display: block;">
+                            Formato: nombre.apellido@xepelin.com
+                        </small>
+                    </div>
+                    
+                    <div>
+                        <label style="display: block; color: #374151; font-weight: bold; margin-bottom: 8px; font-size: 14px;">
+                            💼 Posición *
+                        </label>
+                        <input type="text" id="new-position" placeholder="Desarrollador Senior" style="
+                            width: 100% !important;
+                            padding: 12px !important;
+                            border: 2px solid #D1D5DB !important;
+                            border-radius: 8px !important;
+                            font-size: 14px !important;
+                            box-sizing: border-box !important;
+                        " required>
+                    </div>
+                    
+                    <div>
+                        <label style="display: block; color: #374151; font-weight: bold; margin-bottom: 8px; font-size: 14px;">
+                            🏢 Departamento *
+                        </label>
+                        <input type="text" id="new-department" placeholder="IT" style="
+                            width: 100% !important;
+                            padding: 12px !important;
+                            border: 2px solid #D1D5DB !important;
+                            border-radius: 8px !important;
+                            font-size: 14px !important;
+                            box-sizing: border-box !important;
+                        " required>
+                    </div>
+                    
+                    <div>
+                        <label style="display: block; color: #374151; font-weight: bold; margin-bottom: 8px; font-size: 14px;">
+                            📍 Ubicación *
+                        </label>
+                        <select id="new-location" style="
+                            width: 100% !important;
+                            padding: 12px !important;
+                            border: 2px solid #D1D5DB !important;
+                            border-radius: 8px !important;
+                            font-size: 14px !important;
+                            box-sizing: border-box !important;
+                            background: white !important;
+                        " required>
+                            <option value="">Selecciona una ubicación</option>
+                            <option value="MX">México</option>
+                            <option value="CL">Chile</option>
+                            <option value="CO">Colombia</option>
+                            <option value="PE">Perú</option>
+                            <option value="AR">Argentina</option>
+                            <option value="REMOTO">Remoto</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label style="display: block; color: #374151; font-weight: bold; margin-bottom: 8px; font-size: 14px;">
+                            📅 Fecha de Inicio *
+                        </label>
+                        <input type="date" id="new-start-date" style="
+                            width: 100% !important;
+                            padding: 12px !important;
+                            border: 2px solid #D1D5DB !important;
+                            border-radius: 8px !important;
+                            font-size: 14px !important;
+                            box-sizing: border-box !important;
+                        " required>
+                    </div>
+                    
+                    <!-- Botones -->
+                    <div style="display: flex; gap: 12px; margin-top: 20px; padding-top: 20px; border-top: 2px solid #E5E7EB;">
+                        <button type="button" onclick="window.cerrarModalNuevoOnboarding()" style="
+                            flex: 1 !important;
+                            padding: 12px 20px !important;
+                            background: #6B7280 !important;
+                            color: white !important;
+                            border: none !important;
+                            border-radius: 8px !important;
+                            cursor: pointer !important;
+                            font-weight: bold !important;
+                            font-size: 14px !important;
+                        ">Cancelar</button>
+                        <button type="submit" style="
+                            flex: 1 !important;
+                            padding: 12px 20px !important;
+                            background: #3B82F6 !important;
+                            color: white !important;
+                            border: none !important;
+                            border-radius: 8px !important;
+                            cursor: pointer !important;
+                            font-weight: bold !important;
+                            font-size: 14px !important;
+                        ">✅ Crear Proceso</button>
+                    </div>
+                </form>
+            </div>
+        `;
+        
+        // Agregar al body
+        document.body.appendChild(modal);
+        
+        // Wait for DOM to update before setting up autocomplete
+        setTimeout(() => {
+            // Set today's date as default
+            const startDateInput = document.getElementById('new-start-date');
+            if (startDateInput) {
+                const today = new Date().toISOString().split('T')[0];
+                startDateInput.value = today;
+            }
+            
+            // Setup employee autocomplete - ensure elements exist
+            const employeeIdInput = document.getElementById('new-employee-id');
+            const autocompleteDropdown = document.getElementById('employee-autocomplete-dropdown');
+            
+            if (employeeIdInput && autocompleteDropdown) {
+                console.log('✅ Setting up employee autocomplete...');
+                window.setupEmployeeAutocomplete();
+            } else {
+                console.error('❌ Autocomplete elements not found:', {
+                    employeeIdInput: !!employeeIdInput,
+                    autocompleteDropdown: !!autocompleteDropdown
+                });
+            }
+        }, 100);
+        
+        // Manejar el envío del formulario
+        const form = document.getElementById('form-nuevo-onboarding');
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            window.guardarNuevoOnboarding();
+        });
+        
+        // Cerrar modal al hacer clic fuera
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                window.cerrarModalNuevoOnboarding();
+            }
+        });
+    };
+    
+    // Helper function to generate email from name
+    function generateEmailFromName(name) {
+        if (!name) return '';
+        
+        // Split name into parts
+        const nameParts = name.trim().toLowerCase().split(/\s+/);
+        if (nameParts.length < 2) return '';
+        
+        // Get first name (first part)
+        const firstName = nameParts[0];
+        
+        // Get last name (last part)
+        const lastName = nameParts[nameParts.length - 1];
+        
+        // Remove special characters and accents
+        const cleanFirstName = firstName.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '');
+        const cleanLastName = lastName.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '');
+        
+        // Generate email: nombre.apellido@xepelin.com
+        return `${cleanFirstName}.${cleanLastName}@xepelin.com`;
+    }
+    
+    // Setup employee autocomplete
+    window.setupEmployeeAutocomplete = function() {
+        const employeeIdInput = document.getElementById('new-employee-id');
+        const autocompleteDropdown = document.getElementById('employee-autocomplete-dropdown');
+        
+        if (!employeeIdInput || !autocompleteDropdown) {
+            console.error('❌ Autocomplete setup failed: Elements not found', {
+                employeeIdInput: !!employeeIdInput,
+                autocompleteDropdown: !!autocompleteDropdown
+            });
+            return;
+        }
+        
+        console.log('✅ Autocomplete elements found, setting up...');
+        
+        // Remove existing event listeners by cloning and replacing the input
+        const newInput = employeeIdInput.cloneNode(true);
+        employeeIdInput.parentNode.replaceChild(newInput, employeeIdInput);
+        
+        // Get fresh reference
+        const input = document.getElementById('new-employee-id');
+        
+        let searchTimeout;
+        let selectedEmployee = null;
+        
+        // Debounced search function
+        input.addEventListener('input', async function(e) {
+            // Only get the actual input value, ignore any other events
+            const inputValue = e.target instanceof HTMLInputElement ? e.target.value : '';
+            const searchTerm = String(inputValue).trim();
+            
+            // Prevent extremely long searches (likely copy-paste errors)
+            if (searchTerm.length > 50) {
+                console.warn('Search term too long, truncating to first 50 characters');
+                input.value = searchTerm.substring(0, 50);
+                return;
+            }
+            
+            // Clear previous timeout
+            clearTimeout(searchTimeout);
+            
+            // Hide dropdown if search is too short
+            if (searchTerm.length < 2) {
+                autocompleteDropdown.style.display = 'none';
+                autocompleteDropdown.innerHTML = '';
+                selectedEmployee = null;
+                return;
+            }
+            
+            // Wait 300ms before searching
+            searchTimeout = setTimeout(async () => {
+                try {
+                    console.log('🔍 Searching employees by ID:', searchTerm);
+                    
+                    // Search in Jira employees
+                    if (!window.auth) {
+                        console.error('Auth not available');
+                        return;
+                    }
+                    
+                    // Always search by Employee ID when typing in the ID field
+                    const url = `/onboarding/jira-employees?employeeId=${encodeURIComponent(searchTerm)}&project=Helpdesk On/Off&limit=20`;
+                    console.log('📡 Calling Jira API:', url);
+                    const jiraResponse = await window.auth.apiRequest(url);
+                    
+                    if (!jiraResponse.ok) {
+                        const errorText = await jiraResponse.text().catch(() => 'Unknown error');
+                        console.error('❌ Jira API error:', jiraResponse.status, errorText);
+                        throw new Error(`Error fetching employees from Jira: ${jiraResponse.status}`);
+                    }
+                    
+                    const jiraData = await jiraResponse.json();
+                    console.log('✅ Jira API response:', {
+                        source: jiraData.source || 'unknown',
+                        count: jiraData.employees?.length || 0,
+                        total: jiraData.total || 0,
+                        message: jiraData.message || '',
+                        employees: jiraData.employees || []
+                    });
+                    const employees = jiraData.employees || [];
+                    
+                    if (employees.length === 0) {
+                        console.log('⚠️ No employees found in Jira response');
+                    }
+                    
+                    // Use Jira employees directly (already filtered by search term)
+                    const filteredUsers = employees;
+                    
+                    // Show dropdown with results
+                    if (filteredUsers.length > 0) {
+                        autocompleteDropdown.innerHTML = filteredUsers.map(employee => {
+                            return `
+                                <div class="autocomplete-item" data-employee='${JSON.stringify({
+                                    name: employee.name || '',
+                                    firstName: employee.firstName || '',
+                                    lastName: employee.lastName || '',
+                                    email: employee.email || '',
+                                    employeeId: employee.employeeId || employee.id || '',
+                                    department: employee.department || '',
+                                    location: employee.location || '',
+                                    position: employee.position || '',
+                                    startDate: employee.startDate || '',
+                                    jiraTicket: employee.jiraTicket || ''
+                                })}' style="
+                                    padding: 12px !important;
+                                    cursor: pointer !important;
+                                    border-bottom: 1px solid #E5E7EB !important;
+                                    transition: background-color 0.2s !important;
+                                " onmouseover="this.style.background='#F3F4F6'" onmouseout="this.style.background='white'">
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <div style="flex: 1;">
+                                            <div style="font-weight: bold; color: #1F2937; margin-bottom: 4px;">${employee.employeeId || employee.id} - ${employee.name || 'Sin nombre'}</div>
+                                            <div style="font-size: 12px; color: #6B7280;">${employee.name || 'Sin nombre'} ${employee.department ? '• ' + employee.department : ''}</div>
+                                            ${employee.position ? `<div style="font-size: 11px; color: #9CA3AF; margin-top: 2px;">${employee.position}</div>` : ''}
+                                        </div>
+                                        ${employee.jiraTicket ? `<div style="font-size: 10px; color: #3B82F6; font-weight: bold; margin-left: 8px;">${employee.jiraTicket}</div>` : ''}
+                                    </div>
+                                </div>
+                            `;
+                        }).join('');
+                        
+                        autocompleteDropdown.style.display = 'block';
+                        
+                        // Add click handlers
+                        autocompleteDropdown.querySelectorAll('.autocomplete-item').forEach(item => {
+                            item.addEventListener('click', function() {
+                                const employeeData = JSON.parse(this.getAttribute('data-employee'));
+                                selectedEmployee = employeeData;
+                                
+                                // Fill form fields in order
+                                // 1. Employee ID (already filled)
+                                document.getElementById('new-employee-id').value = employeeData.employeeId || '';
+                                
+                                // 2. Name
+                                document.getElementById('new-employee-name').value = employeeData.name || '';
+                                
+                                // 3. Generate email: nombre.apellido@xepelin.com
+                                let generatedEmail = '';
+                                if (employeeData.firstName && employeeData.lastName) {
+                                    generatedEmail = generateEmailFromName(`${employeeData.firstName} ${employeeData.lastName}`);
+                                } else if (employeeData.name) {
+                                    generatedEmail = generateEmailFromName(employeeData.name);
+                                }
+                                document.getElementById('new-employee-email').value = generatedEmail;
+                                
+                                // 4. Position
+                                document.getElementById('new-position').value = employeeData.position || '';
+                                
+                                // 5. Department
+                                document.getElementById('new-department').value = employeeData.department || '';
+                                
+                                // 6. Start date if available
+                                if (employeeData.startDate) {
+                                    const startDateInput = document.getElementById('new-start-date');
+                                    // Format date if needed (Jira might return different formats)
+                                    let formattedDate = employeeData.startDate;
+                                    if (formattedDate.includes('T')) {
+                                        formattedDate = formattedDate.split('T')[0];
+                                    }
+                                    startDateInput.value = formattedDate;
+                                }
+                                
+                                // 7. Location - map Jira country values to form values
+                                if (employeeData.location) {
+                                    const locationSelect = document.getElementById('new-location');
+                                    const locationValue = String(employeeData.location).trim().toUpperCase();
+                                    
+                                    // Map Jira country values to form dropdown values
+                                    const locationMap = {
+                                        'MX': 'MX',
+                                        'MEXICO': 'MX',
+                                        'MÉXICO': 'MX',
+                                        'CL': 'CL',
+                                        'CHILE': 'CL',
+                                        'CO': 'CO',
+                                        'COLOMBIA': 'CO',
+                                        'PE': 'PE',
+                                        'PERU': 'PE',
+                                        'PERÚ': 'PE',
+                                        'AR': 'AR',
+                                        'ARGENTINA': 'AR',
+                                        'REMOTE': 'REMOTO',
+                                        'REMOTO': 'REMOTO',
+                                        'REMOTELY': 'REMOTO'
+                                    };
+                                    
+                                    // Try exact match first
+                                    let mappedLocation = locationMap[locationValue];
+                                    
+                                    // If not found, try partial match
+                                    if (!mappedLocation) {
+                                        for (const [key, value] of Object.entries(locationMap)) {
+                                            if (locationValue.includes(key) || key.includes(locationValue)) {
+                                                mappedLocation = value;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                    
+                                    // Try to find in dropdown options
+                                    if (!mappedLocation) {
+                                        const locationOption = Array.from(locationSelect.options).find(opt => 
+                                            opt.value.toUpperCase() === locationValue || 
+                                            opt.text.toUpperCase().includes(locationValue) ||
+                                            locationValue.includes(opt.value.toUpperCase())
+                                        );
+                                        if (locationOption) {
+                                            mappedLocation = locationOption.value;
+                                        }
+                                    }
+                                    
+                                    if (mappedLocation) {
+                                        locationSelect.value = mappedLocation;
+                                    }
+                                }
+                                
+                                // Hide dropdown
+                                autocompleteDropdown.style.display = 'none';
+                                autocompleteDropdown.innerHTML = '';
+                            });
+                        });
+                        
+                        // Auto-select if only one result and it matches exactly
+                        if (filteredUsers.length === 1 && filteredUsers[0].employeeId && filteredUsers[0].employeeId.toLowerCase() === searchTerm.toLowerCase()) {
+                            const autoSelectItem = autocompleteDropdown.querySelector('.autocomplete-item');
+                            if (autoSelectItem) {
+                                setTimeout(() => {
+                                    autoSelectItem.click();
+                                }, 100);
+                            }
+                        }
+                    } else {
+                        autocompleteDropdown.innerHTML = `
+                            <div style="padding: 12px; text-align: center; color: #6B7280;">
+                                No se encontraron empleados con ese ID
+                            </div>
+                        `;
+                        autocompleteDropdown.style.display = 'block';
+                    }
+                } catch (error) {
+                    console.error('Error searching employees:', error);
+                    autocompleteDropdown.innerHTML = `
+                        <div style="padding: 12px; text-align: center; color: #EF4444;">
+                            Error al buscar empleados
+                        </div>
+                    `;
+                    autocompleteDropdown.style.display = 'block';
+                }
+            }, 500); // Increased delay to 500ms for ID search
+        });
+        
+        // Hide dropdown when clicking outside
+        const clickOutsideHandler = function(e) {
+            if (!input.contains(e.target) && !autocompleteDropdown.contains(e.target)) {
+                autocompleteDropdown.style.display = 'none';
+            }
+        };
+        document.addEventListener('click', clickOutsideHandler);
+    };
+    
+    // Cerrar modal de nuevo onboarding
+    window.cerrarModalNuevoOnboarding = function() {
+        const modal = document.getElementById('modal-nuevo-onboarding');
+        if (modal) {
+            modal.remove();
+        }
+    };
+    
+    // Guardar nuevo onboarding
+    window.guardarNuevoOnboarding = async function() {
+        try {
+            console.log('💾 Guardando nuevo proceso de onboarding...');
+            
+            const employeeName = document.getElementById('new-employee-name').value;
+            const employeeId = document.getElementById('new-employee-id').value;
+            const email = document.getElementById('new-employee-email').value;
+            const position = document.getElementById('new-position').value;
+            const department = document.getElementById('new-department').value;
+            const location = document.getElementById('new-location').value;
+            const startDate = document.getElementById('new-start-date').value;
+            
+            if (!employeeName || !position || !department || !location || !startDate) {
+                alert('Por favor completa todos los campos requeridos (*)');
+                return;
+            }
+            
+            // Check if auth is available
+            if (!window.auth) {
+                throw new Error('Auth no disponible. Por favor recarga la página.');
+            }
+            
+            // Show loading
+            if (typeof showNotification === 'function') {
+                showNotification('info', 'Creando proceso', 'Por favor espera...');
+            }
+            
+            const onboardingData = {
+                employeeName: employeeName,
+                employeeId: employeeId || null,
+                email: email || null,
+                position: position,
+                department: department,
+                location: location,
+                startDate: startDate,
+                customSteps: [
+                    { name: 'Create user account', description: 'Set up system access', completed: false, due_date: startDate },
+                    { name: 'Generate responsibility letter', description: 'Create and send responsibility letter', completed: false, due_date: startDate },
+                    { name: 'Assign assets', description: 'Assign required equipment', completed: false, due_date: startDate },
+                    { name: 'Setup workspace', description: 'Configure workspace and tools', completed: false, due_date: startDate },
+                    { name: 'Training completion', description: 'Complete required training', completed: false, due_date: startDate }
+                ]
+            };
+            
+            console.log('📝 Datos del nuevo onboarding:', onboardingData);
+            
+            const response = await window.auth.apiRequest('/onboarding/start', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(onboardingData)
+            });
+            
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || 'Error creando proceso de onboarding');
+            }
+            
+            const result = await response.json();
+            console.log('✅ Proceso creado exitosamente:', result);
+            
+            // Cerrar modal
+            window.cerrarModalNuevoOnboarding();
+            
+            // Mostrar mensaje de éxito
+            if (typeof showNotification === 'function') {
+                showNotification('success', 'Éxito', `Proceso de onboarding creado exitosamente para ${employeeName}`);
+            } else {
+                alert(`Proceso de onboarding creado exitosamente para ${employeeName}`);
+            }
+            
+            // Recargar la lista de procesos
+            if (window.onboardingManager && window.onboardingManager.loadProcesses) {
+                setTimeout(() => {
+                    window.onboardingManager.loadProcesses();
+                }, 500);
+            }
+        } catch (error) {
+            console.error('❌ Error creando onboarding:', error);
+            if (typeof showNotification === 'function') {
+                showNotification('error', 'Error', error.message || 'Error creando proceso de onboarding');
+            } else {
+                alert('Error: ' + (error.message || 'Error creando proceso de onboarding'));
+            }
+        }
     };
 
     window.exportOnboarding = function() {
         alert('Función: Exportar datos de onboarding');
+    };
+
+    // Generate Onboarding PDF function
+    window.generateOnboardingPDF = async function() {
+        try {
+            console.log('📄 Generando PDF de onboarding...');
+            
+            // Show modal to collect employee information
+            const modal = document.createElement('div');
+            modal.id = 'modal-generate-onboarding-pdf';
+            modal.style.cssText = `
+                position: fixed !important;
+                top: 0 !important;
+                left: 0 !important;
+                width: 100vw !important;
+                height: 100vh !important;
+                background: rgba(0, 0, 0, 0.5) !important;
+                z-index: 10000000 !important;
+                display: flex !important;
+                justify-content: center !important;
+                align-items: center !important;
+                font-family: Arial, sans-serif !important;
+            `;
+            
+            modal.innerHTML = `
+                <div style="
+                    background: white !important;
+                    border-radius: 12px !important;
+                    padding: 30px !important;
+                    max-width: 500px !important;
+                    width: 90% !important;
+                    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1) !important;
+                ">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                        <h2 style="color: #1F2937; font-size: 24px; font-weight: bold; margin: 0;">
+                            📄 Generar PDF de Onboarding
+                        </h2>
+                        <button onclick="this.closest('#modal-generate-onboarding-pdf').remove()" style="
+                            background: #EF4444 !important;
+                            color: white !important;
+                            border: none !important;
+                            padding: 8px 12px !important;
+                            border-radius: 6px !important;
+                            cursor: pointer !important;
+                            font-size: 16px !important;
+                        ">✕</button>
+                    </div>
+                    
+                    <form id="form-generate-pdf" style="display: flex; flex-direction: column; gap: 20px;">
+                        <div style="position: relative;">
+                            <label style="display: block; color: #374151; font-weight: bold; margin-bottom: 8px; font-size: 14px;">
+                                👤 Buscar Empleado en Snipe-IT *
+                            </label>
+                            <input type="text" id="pdf-employee-search" required autocomplete="off" placeholder="Escribe nombre o email para buscar..." style="
+                                width: 100% !important;
+                                padding: 12px !important;
+                                border: 2px solid #D1D5DB !important;
+                                border-radius: 8px !important;
+                                font-size: 14px !important;
+                                box-sizing: border-box !important;
+                            ">
+                            <div id="pdf-employee-autocomplete" style="
+                                display: none;
+                                position: absolute;
+                                top: 100%;
+                                left: 0;
+                                right: 0;
+                                background: white;
+                                border: 2px solid #D1D5DB;
+                                border-top: none;
+                                border-radius: 0 0 8px 8px;
+                                max-height: 200px;
+                                overflow-y: auto;
+                                z-index: 1000;
+                                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                            "></div>
+                        </div>
+                        
+                        <div>
+                            <label style="display: block; color: #374151; font-weight: bold; margin-bottom: 8px; font-size: 14px;">
+                                👤 Nombre del Empleado *
+                            </label>
+                            <input type="text" id="pdf-employee-name" required autocomplete="off" readonly style="
+                                width: 100% !important;
+                                padding: 12px !important;
+                                border: 2px solid #D1D5DB !important;
+                                border-radius: 8px !important;
+                                font-size: 14px !important;
+                                box-sizing: border-box !important;
+                                background: #F3F4F6 !important;
+                            ">
+                        </div>
+                        
+                        <div>
+                            <label style="display: block; color: #374151; font-weight: bold; margin-bottom: 8px; font-size: 14px;">
+                                🆔 ID de Empleado
+                            </label>
+                            <input type="text" id="pdf-employee-id" autocomplete="off" style="
+                                width: 100% !important;
+                                padding: 12px !important;
+                                border: 2px solid #D1D5DB !important;
+                                border-radius: 8px !important;
+                                font-size: 14px !important;
+                                box-sizing: border-box !important;
+                            ">
+                        </div>
+                        
+                        <div>
+                            <label style="display: block; color: #374151; font-weight: bold; margin-bottom: 8px; font-size: 14px;">
+                                📧 Email *
+                            </label>
+                            <input type="email" id="pdf-employee-email" required autocomplete="off" readonly style="
+                                width: 100% !important;
+                                padding: 12px !important;
+                                border: 2px solid #D1D5DB !important;
+                                border-radius: 8px !important;
+                                font-size: 14px !important;
+                                box-sizing: border-box !important;
+                                background: #F3F4F6 !important;
+                            ">
+                            <small style="color: #6B7280; font-size: 12px; margin-top: 4px; display: block;">
+                                Se buscarán los assets en Snipe IT usando este email
+                            </small>
+                        </div>
+                        
+                        <!-- Assets Preview -->
+                        <div id="pdf-assets-preview" style="display: none; margin-top: 10px;">
+                            <label style="display: block; color: #374151; font-weight: bold; margin-bottom: 8px; font-size: 14px;">
+                                📦 Assets Asignados (desde Snipe-IT)
+                            </label>
+                            <div style="
+                                max-height: 200px;
+                                overflow-y: auto;
+                                border: 2px solid #D1D5DB;
+                                border-radius: 8px;
+                                padding: 10px;
+                                background: #F9FAFB;
+                            ">
+                                <table id="pdf-assets-table" style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                                    <thead>
+                                        <tr style="background: #E5E7EB; font-weight: bold;">
+                                            <th style="padding: 8px; text-align: left; border-bottom: 1px solid #D1D5DB;">Asset Tag</th>
+                                            <th style="padding: 8px; text-align: left; border-bottom: 1px solid #D1D5DB;">Nombre</th>
+                                            <th style="padding: 8px; text-align: left; border-bottom: 1px solid #D1D5DB;">Modelo</th>
+                                            <th style="padding: 8px; text-align: left; border-bottom: 1px solid #D1D5DB;">Serial</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="pdf-assets-table-body">
+                                    </tbody>
+                                </table>
+                                <div id="pdf-assets-loading" style="display: none; text-align: center; padding: 20px; color: #6B7280;">
+                                    Cargando assets...
+                                </div>
+                                <div id="pdf-assets-empty" style="display: none; text-align: center; padding: 20px; color: #6B7280;">
+                                    No se encontraron assets asignados
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label style="display: block; color: #374151; font-weight: bold; margin-bottom: 8px; font-size: 14px;">
+                                💼 Posición
+                            </label>
+                            <input type="text" id="pdf-position" autocomplete="off" style="
+                                width: 100% !important;
+                                padding: 12px !important;
+                                border: 2px solid #D1D5DB !important;
+                                border-radius: 8px !important;
+                                font-size: 14px !important;
+                                box-sizing: border-box !important;
+                            ">
+                        </div>
+                        
+                        <div>
+                            <label style="display: block; color: #374151; font-weight: bold; margin-bottom: 8px; font-size: 14px;">
+                                🏢 Departamento
+                            </label>
+                            <input type="text" id="pdf-department" autocomplete="off" style="
+                                width: 100% !important;
+                                padding: 12px !important;
+                                border: 2px solid #D1D5DB !important;
+                                border-radius: 8px !important;
+                                font-size: 14px !important;
+                                box-sizing: border-box !important;
+                            ">
+                        </div>
+                        
+                        <div>
+                            <label style="display: block; color: #374151; font-weight: bold; margin-bottom: 8px; font-size: 14px;">
+                                🌍 Ubicación
+                            </label>
+                            <select id="pdf-location" style="
+                                width: 100% !important;
+                                padding: 12px !important;
+                                border: 2px solid #D1D5DB !important;
+                                border-radius: 8px !important;
+                                font-size: 14px !important;
+                                box-sizing: border-box !important;
+                            ">
+                                <option value="MX">México</option>
+                                <option value="CL">Chile</option>
+                                <option value="REMOTO">Remoto</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label style="display: block; color: #374151; font-weight: bold; margin-bottom: 8px; font-size: 14px;">
+                                📅 Fecha de Inicio
+                            </label>
+                            <input type="date" id="pdf-start-date" style="
+                                width: 100% !important;
+                                padding: 12px !important;
+                                border: 2px solid #D1D5DB !important;
+                                border-radius: 8px !important;
+                                font-size: 14px !important;
+                                box-sizing: border-box !important;
+                            ">
+                        </div>
+                        
+                        <div style="display: flex; gap: 10px; margin-top: 10px;">
+                            <button type="submit" style="
+                                flex: 1 !important;
+                                background: #3B82F6 !important;
+                                color: white !important;
+                                border: none !important;
+                                padding: 12px !important;
+                                border-radius: 8px !important;
+                                font-size: 14px !important;
+                                font-weight: bold !important;
+                                cursor: pointer !important;
+                            ">Generar PDF</button>
+                            <button type="button" onclick="this.closest('#modal-generate-onboarding-pdf').remove()" style="
+                                flex: 1 !important;
+                                background: #6B7280 !important;
+                                color: white !important;
+                                border: none !important;
+                                padding: 12px !important;
+                                border-radius: 8px !important;
+                                font-size: 14px !important;
+                                font-weight: bold !important;
+                                cursor: pointer !important;
+                            ">Cancelar</button>
+                        </div>
+                    </form>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // Setup autocomplete for employee search
+            let searchTimeout;
+            let selectedUserId = null;
+            const searchInput = document.getElementById('pdf-employee-search');
+            const autocompleteDiv = document.getElementById('pdf-employee-autocomplete');
+            const nameInput = document.getElementById('pdf-employee-name');
+            const emailInput = document.getElementById('pdf-employee-email');
+            const idInput = document.getElementById('pdf-employee-id');
+            const assetsPreview = document.getElementById('pdf-assets-preview');
+            const assetsTableBody = document.getElementById('pdf-assets-table-body');
+            const assetsLoading = document.getElementById('pdf-assets-loading');
+            const assetsEmpty = document.getElementById('pdf-assets-empty');
+            
+            // Search users in Snipe-IT
+            searchInput.addEventListener('input', async (e) => {
+                const query = e.target.value.trim();
+                
+                clearTimeout(searchTimeout);
+                
+                if (query.length < 2) {
+                    autocompleteDiv.style.display = 'none';
+                    return;
+                }
+                
+                searchTimeout = setTimeout(async () => {
+                    try {
+                        const response = await window.auth.apiRequest(`/jumpcloud/snipe/users/search?query=${encodeURIComponent(query)}`, {
+                            method: 'GET'
+                        });
+                        
+                        const data = await response.json();
+                        const users = data.users || [];
+                        
+                        if (users.length === 0) {
+                            autocompleteDiv.innerHTML = '<div style="padding: 12px; color: #6B7280; text-align: center;">No se encontraron usuarios</div>';
+                            autocompleteDiv.style.display = 'block';
+                            return;
+                        }
+                        
+                        autocompleteDiv.innerHTML = users.map(user => `
+                            <div class="autocomplete-item" data-user-id="${user.id}" data-user-name="${user.name}" data-user-email="${user.email || user.username}" data-user-id-num="${user.employee_num}" style="
+                                padding: 12px;
+                                cursor: pointer;
+                                border-bottom: 1px solid #E5E7EB;
+                                transition: background 0.2s;
+                            " onmouseover="this.style.background='#F3F4F6'" onmouseout="this.style.background='white'">
+                                <div style="font-weight: bold; color: #1F2937;">${user.name}</div>
+                                <div style="font-size: 12px; color: #6B7280;">${user.email || user.username || ''} ${user.employee_num ? '| ID: ' + user.employee_num : ''}</div>
+                            </div>
+                        `).join('');
+                        
+                        autocompleteDiv.style.display = 'block';
+                        
+                        // Add click handlers
+                        autocompleteDiv.querySelectorAll('.autocomplete-item').forEach(item => {
+                            item.addEventListener('click', async () => {
+                                const userId = item.dataset.userId;
+                                const userName = item.dataset.userName;
+                                const userEmail = item.dataset.userEmail;
+                                const userIdNum = item.dataset.userIdNum;
+                                
+                                selectedUserId = userId;
+                                searchInput.value = userName;
+                                nameInput.value = userName;
+                                emailInput.value = userEmail;
+                                if (userIdNum) idInput.value = userIdNum;
+                                
+                                autocompleteDiv.style.display = 'none';
+                                
+                                // Load assets for this user
+                                assetsPreview.style.display = 'block';
+                                assetsTableBody.innerHTML = '';
+                                assetsLoading.style.display = 'block';
+                                assetsEmpty.style.display = 'none';
+                                
+                                try {
+                                    const assetsResponse = await window.auth.apiRequest(`/jumpcloud/snipe/users/${userId}/assets`, {
+                                        method: 'GET'
+                                    });
+                                    
+                                    const assetsData = await assetsResponse.json();
+                                    const assets = assetsData.assets || [];
+                                    
+                                    assetsLoading.style.display = 'none';
+                                    
+                                    if (assets.length === 0) {
+                                        assetsEmpty.style.display = 'block';
+                                    } else {
+                                        assetsTableBody.innerHTML = assets.map(asset => `
+                                            <tr style="border-bottom: 1px solid #E5E7EB;">
+                                                <td style="padding: 8px;">${asset.asset_tag || 'N/A'}</td>
+                                                <td style="padding: 8px;">${asset.name || 'N/A'}</td>
+                                                <td style="padding: 8px;">${asset.model || 'N/A'}</td>
+                                                <td style="padding: 8px;">${asset.serial || 'N/A'}</td>
+                                            </tr>
+                                        `).join('');
+                                    }
+                                } catch (error) {
+                                    console.error('Error loading assets:', error);
+                                    assetsLoading.style.display = 'none';
+                                    assetsEmpty.style.display = 'block';
+                                    assetsEmpty.textContent = 'Error cargando assets: ' + (error.message || 'Error desconocido');
+                                }
+                            });
+                        });
+                    } catch (error) {
+                        console.error('Error searching users:', error);
+                        autocompleteDiv.innerHTML = '<div style="padding: 12px; color: #EF4444; text-align: center;">Error buscando usuarios</div>';
+                        autocompleteDiv.style.display = 'block';
+                    }
+                }, 300);
+            });
+            
+            // Close autocomplete when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!searchInput.contains(e.target) && !autocompleteDiv.contains(e.target)) {
+                    autocompleteDiv.style.display = 'none';
+                }
+            });
+            
+            // Handle form submission
+            document.getElementById('form-generate-pdf').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const employeeName = document.getElementById('pdf-employee-name').value;
+                const employeeId = document.getElementById('pdf-employee-id').value;
+                const email = document.getElementById('pdf-employee-email').value;
+                const position = document.getElementById('pdf-position').value;
+                const department = document.getElementById('pdf-department').value;
+                const location = document.getElementById('pdf-location').value;
+                const startDate = document.getElementById('pdf-start-date').value || new Date().toISOString().split('T')[0];
+                
+                // Show loading
+                const submitButton = e.target.querySelector('button[type="submit"]');
+                const originalText = submitButton.textContent;
+                submitButton.disabled = true;
+                submitButton.textContent = 'Generando PDF...';
+                
+                try {
+                    if (!window.auth) {
+                        throw new Error('Auth no disponible. Por favor recarga la página.');
+                    }
+                    
+                    const response = await window.auth.apiRequest('/onboarding/generate-pdf', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            employeeName,
+                            employeeId,
+                            email,
+                            position,
+                            department,
+                            location,
+                            startDate
+                        })
+                    });
+                    
+                    // Check if response is OK
+                    if (!response.ok) {
+                        // Try to get error message
+                        let errorMessage = 'Error generando PDF';
+                        try {
+                            const errorData = await response.json();
+                            errorMessage = errorData.error || errorData.details || errorMessage;
+                        } catch (e) {
+                            errorMessage = `Error ${response.status}: ${response.statusText}`;
+                        }
+                        throw new Error(errorMessage);
+                    }
+                    
+                    // Check content type
+                    const contentType = response.headers.get('content-type');
+                    console.log('Response content-type:', contentType);
+                    
+                    if (!contentType || !contentType.includes('application/pdf')) {
+                        console.warn('Response is not a PDF, content-type:', contentType);
+                        // Clone response to read as text
+                        const clonedResponse = response.clone();
+                        const text = await clonedResponse.text();
+                        try {
+                            const errorData = JSON.parse(text);
+                            throw new Error(errorData.error || errorData.details || 'El servidor no devolvió un PDF válido');
+                        } catch (e) {
+                            throw new Error('El servidor no devolvió un PDF válido. Content-Type: ' + contentType);
+                        }
+                    }
+                    
+                    // Download PDF
+                    const blob = await response.blob();
+                    console.log('PDF blob size:', blob.size, 'bytes');
+                    
+                    // Verify blob is not empty
+                    if (blob.size === 0) {
+                        throw new Error('El PDF generado está vacío');
+                    }
+                    
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `onboarding-${employeeName.replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.pdf`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                    
+                    // Close modal
+                    modal.remove();
+                    
+                    if (typeof showNotification === 'function') {
+                        showNotification('success', 'Éxito', 'PDF generado y descargado correctamente');
+                    } else {
+                        alert('PDF generado y descargado correctamente');
+                    }
+                } catch (error) {
+                    console.error('Error generando PDF:', error);
+                    submitButton.disabled = false;
+                    submitButton.textContent = originalText;
+                    
+                    if (typeof showNotification === 'function') {
+                        showNotification('error', 'Error', error.message || 'Error generando PDF');
+                    } else {
+                        alert('Error: ' + (error.message || 'Error generando PDF'));
+                    }
+                }
+            });
+            
+        } catch (error) {
+            console.error('Error opening PDF generation modal:', error);
+            if (typeof showNotification === 'function') {
+                showNotification('error', 'Error', 'No se pudo abrir el formulario');
+            } else {
+                alert('Error: ' + error.message);
+            }
+        }
     };
 
     window.viewOnboarding = function(id) {
@@ -1979,7 +3093,7 @@ function createOffboardingOverlay() {
         top: 64px !important;
         left: 0 !important;
         z-index: 10 !important;
-        background: white !important;
+        background: #fbfbfd !important;
         padding: 20px !important;
         overflow-y: auto !important;
         overflow-x: hidden !important;
@@ -1988,105 +3102,144 @@ function createOffboardingOverlay() {
     // Crear el contenido completo con diseño mejorado
     offboardingContainer.innerHTML = `
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <!-- Header with Gradient -->
-            <div class="mb-8 relative">
-                <div class="bg-gradient-to-r from-orange-600 to-red-600 rounded-2xl p-8 text-white shadow-xl">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <h1 class="text-4xl font-bold mb-2">🚪 Procesos de Offboarding</h1>
-                            <p class="text-orange-100 text-lg">Gestiona el proceso de salida de empleados</p>
+            <!-- Header Apple Style -->
+            <div class="mb-12 relative">
+                <div class="content-card bg-white rounded-3xl p-6 sm:p-8 lg:p-12 border" style="border-color: rgba(0,0,0,0.06); box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                        <div class="flex-1 min-w-0">
+                            <h1 class="text-3xl sm:text-4xl lg:text-5xl font-semibold mb-2 sm:mb-3" style="color: #1d1d1f; letter-spacing: -0.02em;">Procesos de Offboarding</h1>
+                            <p class="text-base sm:text-lg" style="color: #86868b; font-weight: 400;">Gestiona el proceso de salida de empleados</p>
                         </div>
-                        <div class="hidden md:block">
-                            <div class="w-20 h-20 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-                                <i class="fas fa-user-minus text-3xl text-white"></i>
+                        <div class="hidden sm:block">
+                            <div class="w-24 h-24 rounded-full flex items-center justify-center" style="background: linear-gradient(135deg, #f5f5f7 0%, #ffffff 100%);">
+                                <i class="fas fa-user-minus text-3xl" style="color: #ff3b30;"></i>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Enhanced Stats Cards -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <div class="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-orange-200">
+            <!-- Stats Cards Apple Style -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+                <div class="stats-card bg-white rounded-3xl border" style="border-color: rgba(0,0,0,0.06); box-shadow: 0 1px 3px rgba(0,0,0,0.04); padding: 2.25rem;">
                     <div class="flex items-center justify-between">
                         <div>
-                            <p class="text-sm font-medium text-orange-600 mb-1">En Proceso</p>
-                            <p class="text-3xl font-bold text-orange-800">8</p>
-                            <p class="text-xs text-orange-500 mt-1">Activos</p>
+                            <p class="text-sm font-medium mb-2.5" style="color: #86868b; letter-spacing: 0.01em;">En Proceso</p>
+                            <p class="text-4xl font-semibold mb-1" style="color: #1d1d1f; letter-spacing: -0.03em;">8</p>
+                            <p class="text-xs mt-1.5" style="color: #86868b;">Activos</p>
                         </div>
-                        <div class="w-12 h-12 bg-orange-500 rounded-xl flex items-center justify-center shadow-lg">
-                            <i class="fas fa-clock text-white text-lg"></i>
+                        <div class="w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-300" style="background: #f5f5f7;">
+                            <svg class="flaticon-icon text-lg" style="width: 1.125rem; height: 1.125rem; color: #ff9500;" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <polyline points="12 6 12 12 16 14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
                         </div>
                     </div>
                 </div>
                 
-                <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-blue-200">
+                <div class="stats-card bg-white rounded-3xl border" style="border-color: rgba(0,0,0,0.06); box-shadow: 0 1px 3px rgba(0,0,0,0.04); padding: 2.25rem;">
                     <div class="flex items-center justify-between">
                         <div>
-                            <p class="text-sm font-medium text-blue-600 mb-1">Assets Pendientes</p>
-                            <p class="text-3xl font-bold text-blue-800">15</p>
-                            <p class="text-xs text-blue-500 mt-1">Por recuperar</p>
+                            <p class="text-sm font-medium mb-2.5" style="color: #86868b; letter-spacing: 0.01em;">Assets Pendientes</p>
+                            <p class="text-4xl font-semibold mb-1" style="color: #1d1d1f; letter-spacing: -0.03em;">15</p>
+                            <p class="text-xs mt-1.5" style="color: #86868b;">Por recuperar</p>
                         </div>
-                        <div class="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center shadow-lg">
-                            <i class="fas fa-laptop text-white text-lg"></i>
+                        <div class="w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-300" style="background: #f5f5f7;">
+                            <svg class="flaticon-icon text-lg" style="width: 1.125rem; height: 1.125rem; color: #0071e3;" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <rect x="2" y="4" width="20" height="12" rx="2" ry="2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <line x1="2" y1="16" x2="22" y2="16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
                         </div>
                     </div>
                 </div>
                 
-                <div class="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-yellow-200">
+                <div class="stats-card bg-white rounded-3xl border" style="border-color: rgba(0,0,0,0.06); box-shadow: 0 1px 3px rgba(0,0,0,0.04); padding: 2.25rem;">
                     <div class="flex items-center justify-between">
                         <div>
-                            <p class="text-sm font-medium text-yellow-600 mb-1">Documentos Faltantes</p>
-                            <p class="text-3xl font-bold text-yellow-800">6</p>
-                            <p class="text-xs text-yellow-500 mt-1">Requieren atención</p>
+                            <p class="text-sm font-medium mb-2.5" style="color: #86868b; letter-spacing: 0.01em;">Documentos Faltantes</p>
+                            <p class="text-4xl font-semibold mb-1" style="color: #1d1d1f; letter-spacing: -0.03em;">6</p>
+                            <p class="text-xs mt-1.5" style="color: #86868b;">Requieren atención</p>
                         </div>
-                        <div class="w-12 h-12 bg-yellow-500 rounded-xl flex items-center justify-center shadow-lg">
-                            <i class="fas fa-exclamation-triangle text-white text-lg"></i>
+                        <div class="w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-300" style="background: #f5f5f7;">
+                            <svg class="flaticon-icon text-lg" style="width: 1.125rem; height: 1.125rem; color: #ff9500;" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <line x1="12" y1="9" x2="12" y2="13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <line x1="12" y1="17" x2="12.01" y2="17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
                         </div>
                     </div>
                 </div>
                 
-                <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-green-200">
+                <div class="stats-card bg-white rounded-3xl border" style="border-color: rgba(0,0,0,0.06); box-shadow: 0 1px 3px rgba(0,0,0,0.04); padding: 2.25rem;">
                     <div class="flex items-center justify-between">
                         <div>
-                            <p class="text-sm font-medium text-green-600 mb-1">Completados</p>
-                            <p class="text-3xl font-bold text-green-800">12</p>
-                            <p class="text-xs text-green-500 mt-1">Finalizados</p>
+                            <p class="text-sm font-medium mb-2.5" style="color: #86868b; letter-spacing: 0.01em;">Completados</p>
+                            <p class="text-4xl font-semibold mb-1" style="color: #1d1d1f; letter-spacing: -0.03em;">12</p>
+                            <p class="text-xs mt-1.5" style="color: #86868b;">Finalizados</p>
                         </div>
-                        <div class="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center shadow-lg">
-                            <i class="fas fa-check-circle text-white text-lg"></i>
+                        <div class="w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-300" style="background: #f5f5f7;">
+                            <i class="fas fa-check-circle text-lg" style="color: #30d158;"></i>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Enhanced Actions Bar -->
-            <div class="bg-white rounded-2xl shadow-lg p-6 mb-6 border border-gray-100">
-                <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                    <div class="flex flex-wrap items-center gap-3">
-                        <button onclick="createNewOffboarding()" class="bg-gradient-to-r from-orange-600 to-orange-700 text-white px-6 py-3 rounded-xl hover:from-orange-700 hover:to-orange-800 transition-all duration-200 flex items-center shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
-                            <i class="fas fa-plus mr-2"></i>
+            <!-- Actions Bar Apple Style -->
+            <div class="content-card bg-white rounded-3xl p-8 mb-8 border" style="border-color: rgba(0,0,0,0.06); box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+                <div class="flex flex-row items-center justify-between gap-6 flex-wrap">
+                    <div class="flex flex-row flex-wrap items-center gap-3">
+                        <button onclick="createNewOffboarding()" class="w-full sm:w-auto px-4 sm:px-6 py-2.5 sm:py-3 rounded-full flex items-center justify-center whitespace-nowrap transition-all duration-200" style="background: #1d1d1f; color: white; font-weight: 500; font-size: 14px sm:text-base; letter-spacing: -0.01em;" onmouseover="this.style.background='#2d2d2f'" onmouseout="this.style.background='#1d1d1f'">
+                            <svg class="flaticon-icon mr-2 text-sm" style="width: 0.875rem; height: 0.875rem;" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
                             Nuevo Offboarding
                         </button>
-                        <button onclick="exportOffboarding()" class="bg-gradient-to-r from-green-600 to-green-700 text-white px-6 py-3 rounded-xl hover:from-green-700 hover:to-green-800 transition-all duration-200 flex items-center shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
-                            <i class="fas fa-download mr-2"></i>
-                            Exportar
+                        <button onclick="exportOffboarding()" class="w-full sm:w-auto px-4 sm:px-6 py-2.5 sm:py-3 rounded-full flex items-center justify-center whitespace-nowrap transition-all duration-200 text-sm sm:text-base" style="background: #1d1d1f; color: white; font-weight: 500; letter-spacing: -0.01em;" onmouseover="this.style.background='#2d2d2f'" onmouseout="this.style.background='#1d1d1f'">
+                            <svg class="flaticon-icon mr-2 text-sm" style="width: 0.875rem; height: 0.875rem;" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <polyline points="7 10 12 15 17 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <line x1="12" y1="15" x2="12" y2="3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            <span class="hidden sm:inline">Exportar</span>
+                            <span class="sm:hidden">Exportar</span>
                         </button>
-                        <button onclick="generateOffboardingReport()" class="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 flex items-center shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
-                            <i class="fas fa-chart-bar mr-2"></i>
-                            Reporte
+                        <button onclick="generateOffboardingReport()" class="w-full sm:w-auto px-4 sm:px-6 py-2.5 sm:py-3 rounded-full flex items-center justify-center whitespace-nowrap transition-all duration-200 text-sm sm:text-base" style="background: #1d1d1f; color: white; font-weight: 500; letter-spacing: -0.01em;" onmouseover="this.style.background='#2d2d2f'" onmouseout="this.style.background='#1d1d1f'">
+                            <svg class="flaticon-icon mr-2 text-sm" style="width: 0.875rem; height: 0.875rem;" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <line x1="18" y1="20" x2="18" y2="10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <line x1="12" y1="20" x2="12" y2="4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <line x1="6" y1="20" x2="6" y2="14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            <span class="hidden sm:inline">Reporte</span>
+                            <span class="sm:hidden">Reporte</span>
                         </button>
-                        <button onclick="bulkOffboardingActions()" class="bg-gradient-to-r from-purple-600 to-purple-700 text-white px-6 py-3 rounded-xl hover:from-purple-700 hover:to-purple-800 transition-all duration-200 flex items-center shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
-                            <i class="fas fa-tasks mr-2"></i>
-                            Acciones Masivas
+                        <button onclick="bulkOffboardingActions()" class="w-full sm:w-auto px-4 sm:px-6 py-2.5 sm:py-3 rounded-full flex items-center justify-center whitespace-nowrap transition-all duration-200 text-sm sm:text-base" style="background: #1d1d1f; color: white; font-weight: 500; letter-spacing: -0.01em;" onmouseover="this.style.background='#2d2d2f'" onmouseout="this.style.background='#1d1d1f'">
+                            <svg class="flaticon-icon mr-2 text-sm" style="width: 0.875rem; height: 0.875rem;" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <rect x="3" y="3" width="7" height="7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <rect x="14" y="3" width="7" height="7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <rect x="14" y="14" width="7" height="7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <rect x="3" y="14" width="7" height="7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            <span class="hidden sm:inline">Acciones Masivas</span>
+                            <span class="sm:hidden">Masivas</span>
+                        </button>
+                        <button onclick="openPDFEditor()" class="w-full sm:w-auto px-4 sm:px-6 py-2.5 sm:py-3 rounded-full flex items-center justify-center whitespace-nowrap transition-all duration-200 text-sm sm:text-base" style="background: #1d1d1f; color: white; font-weight: 500; letter-spacing: -0.01em;" onmouseover="this.style.background='#2d2d2f'" onmouseout="this.style.background='#1d1d1f'">
+                            <svg class="flaticon-icon mr-2 text-sm" style="width: 0.875rem; height: 0.875rem;" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            Editar Template PDF
                         </button>
                     </div>
-                    <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                        <div class="relative">
-                            <input type="text" placeholder="Buscar empleado..." class="w-full sm:w-64 pl-10 pr-4 py-3 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent shadow-sm">
-                            <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                    <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+                        <div class="relative w-full sm:w-64">
+                            <input type="text" placeholder="Buscar empleado..." class="w-full pl-10 pr-4 py-2.5 sm:py-3 rounded-full text-sm focus:outline-none" style="background: #f5f5f7; border: 1px solid #d2d2d7; color: #1d1d1f; font-size: 14px;" onfocus="this.style.background='white'; this.style.borderColor='#0071e3'" onblur="this.style.background='#f5f5f7'; this.style.borderColor='#d2d2d7'">
+                            <svg class="flaticon-icon absolute left-3 top-1/2 transform -translate-y-1/2" style="width: 0.875rem; height: 0.875rem; color: #86868b;" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="m21 21-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
                         </div>
-                        <select class="px-4 py-3 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent shadow-sm">
+                        <select class="w-full sm:w-auto px-4 py-2.5 sm:py-3 rounded-full text-sm focus:outline-none" style="background: #f5f5f7; border: 1px solid #d2d2d7; color: #1d1d1f; font-size: 14px;" onfocus="this.style.background='white'; this.style.borderColor='#0071e3'" onblur="this.style.background='#f5f5f7'; this.style.borderColor='#d2d2d7'">
                             <option value="">Todos los estados</option>
                             <option value="in_progress">En Proceso</option>
                             <option value="pending_assets">Assets Pendientes</option>
@@ -2097,16 +3250,17 @@ function createOffboardingOverlay() {
                 </div>
             </div>
 
-            <!-- Enhanced Offboarding Table -->
-            <div class="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100">
-                <div class="px-6 py-4 bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
-                    <h3 class="text-lg font-semibold text-gray-800 flex items-center">
-                        <i class="fas fa-table mr-2 text-orange-600"></i>
-                        Lista de Procesos de Offboarding
+            <!-- Offboarding Table Apple Style -->
+            <div class="content-card bg-white rounded-3xl overflow-hidden border" style="border-color: rgba(0,0,0,0.06); box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+                <div class="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 border-b" style="border-color: #f5f5f7;">
+                    <h3 class="text-xl sm:text-2xl font-semibold flex items-center" style="color: #1d1d1f; letter-spacing: -0.02em;">
+                        <i class="fas fa-table mr-2 sm:mr-3 text-lg sm:text-xl" style="color: #ff3b30;"></i>
+                        <span class="hidden sm:inline">Lista de Procesos de Offboarding</span>
+                        <span class="sm:hidden">Offboarding</span>
                     </h3>
                 </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full divide-y divide-gray-200" style="min-width: 1200px;">
+                <div class="overflow-x-auto -mx-4 sm:mx-0">
+                    <table class="w-full divide-y divide-gray-200" style="min-width: 1000px;">
                         <thead class="bg-gray-50">
                             <tr>
                                 <th class="px-4 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-1/4">
@@ -2322,7 +3476,38 @@ function createOffboardingOverlay() {
 
     // Agregar funciones globales para offboarding
     window.createNewOffboarding = function() {
-        alert('Función: Crear nuevo proceso de offboarding');
+        console.log('🔵 createNewOffboarding called');
+        
+        // Check if offboardingManager exists
+        if (window.offboardingManager) {
+            console.log('✅ Using offboardingManager.openCreateProcessModal()');
+            window.offboardingManager.openCreateProcessModal();
+        } else if (window.openCreateOffboardingModal) {
+            console.log('✅ Using global openCreateOffboardingModal()');
+            window.openCreateOffboardingModal();
+        } else {
+            // Fallback: directly open the modal
+            console.log('⚠️ Fallback: directly opening modal');
+            const modal = document.getElementById('createOffboardingModal');
+            if (modal) {
+                modal.classList.remove('hidden');
+                modal.style.display = 'flex';
+                modal.style.alignItems = 'center';
+                modal.style.justifyContent = 'center';
+                modal.style.zIndex = '100000';
+                
+                // Reset form
+                const form = document.getElementById('createOffboardingForm');
+                if (form) {
+                    form.reset();
+                }
+                
+                console.log('✅ Modal opened successfully');
+            } else {
+                console.error('❌ createOffboardingModal not found in DOM');
+                alert('Error: No se pudo abrir el modal de crear offboarding. Por favor, recarga la página.');
+            }
+        }
     };
 
     window.exportOffboarding = function() {
@@ -2537,6 +3722,90 @@ function closeResponsibilityDropdown() {
     }
 }
 
+// Abrir herramienta de firma de PDF
+function openPdfSignerTool() {
+    console.log('📝 Abriendo herramienta de firma de PDF...');
+    
+    // Crear o mostrar sección de firma de PDF
+    let pdfSignerSection = document.getElementById('pdf-signer-section');
+    
+    if (!pdfSignerSection) {
+        // Crear la sección si no existe
+        pdfSignerSection = document.createElement('div');
+        pdfSignerSection.id = 'pdf-signer-section';
+        pdfSignerSection.className = 'section hidden';
+        pdfSignerSection.style.cssText = `
+            position: relative;
+            min-height: 100vh;
+            padding-top: 80px;
+            background: #f5f5f7;
+        `;
+        
+        const container = document.createElement('div');
+        container.className = 'container mx-auto px-6 py-8';
+        container.id = 'pdfSignerContainer';
+        pdfSignerSection.appendChild(container);
+        
+        // Agregar al dashboard
+        const dashboard = document.getElementById('dashboard');
+        if (dashboard) {
+            dashboard.appendChild(pdfSignerSection);
+        } else {
+            document.body.appendChild(pdfSignerSection);
+        }
+    }
+    
+    // Ocultar todas las demás secciones
+    document.querySelectorAll('.section').forEach(section => {
+        if (section.id !== 'pdf-signer-section') {
+            section.classList.add('hidden');
+            section.style.display = 'none';
+        }
+    });
+    
+    // Mostrar la sección de firma
+    pdfSignerSection.classList.remove('hidden');
+    pdfSignerSection.style.display = 'block';
+    pdfSignerSection.style.visibility = 'visible';
+    pdfSignerSection.style.opacity = '1';
+    
+    // Renderizar la herramienta
+    const container = document.getElementById('pdfSignerContainer');
+    if (container && window.pdfSignerTool) {
+        window.pdfSignerTool.render(container);
+    } else if (container) {
+        // Si no existe, inicializarla
+        if (window.PDFSignerTool) {
+            window.pdfSignerTool = new window.PDFSignerTool();
+            window.pdfSignerTool.render(container);
+        } else {
+            container.innerHTML = `
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                    <div class="text-center py-12">
+                        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+                        <p class="text-gray-600 dark:text-gray-400">Cargando herramienta de firma...</p>
+                    </div>
+                </div>
+            `;
+            // Esperar a que se cargue el script
+            setTimeout(() => {
+                if (window.pdfSignerTool) {
+                    window.pdfSignerTool.render(container);
+                } else if (window.PDFSignerTool) {
+                    window.pdfSignerTool = new window.PDFSignerTool();
+                    window.pdfSignerTool.render(container);
+                }
+            }, 500);
+        }
+    }
+    
+    // Scroll al inicio
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// Hacer la función globalmente disponible
+window.openPdfSignerTool = openPdfSignerTool;
+
 // Initialize dropdown functionality
 function initializeDropdowns() {
     console.log('🔽 Initializing dropdowns...');
@@ -2637,6 +3906,808 @@ window.addEventListener('unhandledrejection', function(event) {
         window.app.handleError(event.reason, 'Unhandled Promise Rejection');
     }
 });
+
+// User Management Functions - Create full page overlay (like onboarding/offboarding)
+window.abrirGestionUsuarios = function() {
+    // Limpiar cualquier overlay existente (incluyendo ultimate-users-interface)
+    const existingOverlays = document.querySelectorAll('#users-section-overlay, #ultimate-users-interface, [id$="-section-overlay"]');
+    existingOverlays.forEach(el => el.remove());
+
+    // Limpiar cualquier sección con position fixed
+    document.querySelectorAll('[id$="-section"]').forEach(section => {
+        if (section.style.position === 'fixed' || section.id.includes('overlay')) {
+            section.remove();
+        }
+    });
+
+    // Limpiar botones de cerrar
+    document.querySelectorAll('button[class*="fixed top-20 right-4"], button[id*="close-users"]').forEach(btn => {
+        btn.remove();
+    });
+
+    // Ocultar dashboard
+    const dashboardSection = document.getElementById('dashboard-section');
+    if (dashboardSection) {
+        dashboardSection.classList.add('hidden');
+        dashboardSection.style.display = 'none';
+    }
+
+    // Obtener el contenido de la sección de usuarios del HTML
+    const existingUsersSection = document.getElementById('users-section');
+    let usersContent = '';
+    
+    if (existingUsersSection) {
+        usersContent = existingUsersSection.innerHTML;
+    } else {
+        // Fallback: crear contenido básico
+        usersContent = `
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <h1 class="text-5xl font-semibold mb-3" style="color: #1d1d1f; letter-spacing: -0.02em;">Gestión de Usuarios</h1>
+                <p class="text-lg" style="color: #86868b; font-weight: 400;">Administra usuarios, roles y permisos del sistema</p>
+            </div>
+        `;
+    }
+
+    // Crear users container como overlay completo
+    const usersContainer = document.createElement('div');
+    usersContainer.id = 'users-section-overlay';
+    usersContainer.className = 'section';
+    usersContainer.style.cssText = `
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        height: 100vh !important;
+        width: 100vw !important;
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        z-index: 9999 !important;
+        background: #fbfbfd !important;
+        padding: 0 !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        margin: 0 !important;
+    `;
+
+    // Obtener el header del dashboard y clonarlo
+    const dashboardHeader = document.querySelector('header');
+    let headerHTML = '';
+    if (dashboardHeader) {
+        // Clonar el header y ajustar z-index de dropdowns
+        const headerClone = dashboardHeader.cloneNode(true);
+        // Ajustar z-index del header y sus dropdowns
+        headerClone.style.zIndex = '10000';
+        headerClone.style.position = 'relative';
+        
+        // Ajustar z-index de todos los dropdowns dentro del header
+        const dropdowns = headerClone.querySelectorAll('[id$="Dropdown"], [id$="dropdown"]');
+        dropdowns.forEach(dropdown => {
+            dropdown.style.zIndex = '10001';
+        });
+        
+        headerHTML = headerClone.outerHTML;
+    } else {
+        // Fallback: crear header básico
+        headerHTML = `
+            <header class="bg-white/80 backdrop-blur-xl sticky top-0 z-40" style="border-bottom: 0.5px solid rgba(0,0,0,0.1); box-shadow: 0 1px 3px rgba(0,0,0,0.05); position: relative; z-index: 10000;">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="flex justify-between items-center h-20">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 flex items-center group cursor-pointer">
+                                <div class="w-12 h-12 bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-600 rounded-xl flex items-center justify-center mr-4 shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-105">
+                                    <svg class="flaticon-icon" style="width: 1.25rem; height: 1.25rem; color: white;" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="currentColor"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h1 class="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">TechSupport</h1>
+                                    <p class="text-xs text-gray-500 -mt-1 font-medium">Asset Management</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+        `;
+    }
+
+    usersContainer.innerHTML = `
+        ${headerHTML}
+        <div style="min-height: calc(100vh - 80px);">
+            ${usersContent}
+        </div>
+    `;
+    
+    // Después de agregar al DOM, ajustar z-index de dropdowns y re-inicializar eventos
+    setTimeout(() => {
+        const headerInOverlay = usersContainer.querySelector('header');
+        if (headerInOverlay) {
+            headerInOverlay.style.zIndex = '10000';
+            headerInOverlay.style.position = 'relative';
+            
+            // Ajustar z-index de todos los dropdowns
+            const allDropdowns = headerInOverlay.querySelectorAll('[id$="Dropdown"], [id$="dropdown"], .absolute, [class*="dropdown"]');
+            allDropdowns.forEach(dropdown => {
+                if (dropdown.style) {
+                    dropdown.style.zIndex = '10001';
+                }
+            });
+            
+            // Re-inicializar eventos de dropdowns
+            const userMenuButton = headerInOverlay.querySelector('#userMenuButton');
+            const userDropdown = headerInOverlay.querySelector('#userDropdown');
+            if (userMenuButton && userDropdown) {
+                userMenuButton.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    userDropdown.classList.toggle('hidden');
+                });
+            }
+            
+            const notificationButton = headerInOverlay.querySelector('#notificationButton');
+            const notificationDropdown = headerInOverlay.querySelector('#notificationDropdown');
+            if (notificationButton && notificationDropdown) {
+                notificationButton.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    notificationDropdown.classList.toggle('hidden');
+                });
+            }
+            
+            const responsibilityButton = headerInOverlay.querySelector('#responsibilityDropdownButton');
+            const responsibilityDropdown = headerInOverlay.querySelector('#responsibilityDropdown');
+            if (responsibilityButton && responsibilityDropdown) {
+                responsibilityButton.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    responsibilityDropdown.classList.toggle('hidden');
+                });
+            }
+            
+            // Cerrar dropdowns al hacer click fuera
+            document.addEventListener('click', function closeDropdowns(e) {
+                if (userDropdown && !userMenuButton.contains(e.target) && !userDropdown.contains(e.target)) {
+                    userDropdown.classList.add('hidden');
+                }
+                if (notificationDropdown && !notificationButton.contains(e.target) && !notificationDropdown.contains(e.target)) {
+                    notificationDropdown.classList.add('hidden');
+                }
+                if (responsibilityDropdown && !responsibilityButton.contains(e.target) && !responsibilityDropdown.contains(e.target)) {
+                    responsibilityDropdown.classList.add('hidden');
+                }
+            });
+        }
+    }, 100);
+
+    // Agregar al body
+    document.body.appendChild(usersContainer);
+
+    // Agregar botón de cerrar
+    const closeButton = document.createElement('button');
+    closeButton.innerHTML = `
+        <svg class="flaticon-icon" style="width: 1.25rem; height: 1.25rem; color: white;" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+    `;
+    closeButton.className = 'fixed top-20 right-4 px-4 py-3 rounded-full transition-all duration-200 z-50';
+    closeButton.style.cssText = `
+        background: #1d1d1f !important;
+        color: white !important;
+        border: none !important;
+        cursor: pointer !important;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15) !important;
+    `;
+    closeButton.onmouseover = function() {
+        this.style.background = '#2d2d2f';
+    };
+    closeButton.onmouseout = function() {
+        this.style.background = '#1d1d1f';
+    };
+    closeButton.onclick = () => {
+        usersContainer.remove();
+        closeButton.remove();
+        // Mostrar dashboard
+        const dashboardSection = document.getElementById('dashboard-section');
+        if (dashboardSection) {
+            dashboardSection.classList.remove('hidden');
+            dashboardSection.style.display = 'block';
+        }
+        // Limpiar cualquier otro overlay de usuarios
+        const otherUsersOverlays = document.querySelectorAll('#ultimate-users-interface, #users-section-overlay');
+        otherUsersOverlays.forEach(el => el.remove());
+    };
+    document.body.appendChild(closeButton);
+
+    // Cargar datos de usuarios
+    setTimeout(() => {
+        if (window.userManager) {
+            window.userManager.loadUsers();
+        } else if (window.UserManager) {
+            window.userManager = new window.UserManager();
+            window.userManager.loadUsers();
+        }
+    }, 100);
+
+    return false;
+};
+
+// ========================================
+// MODALES DE EDICIÓN Y ELIMINACIÓN DE USUARIOS
+// ========================================
+
+// Modal de Editar Usuario
+window.abrirModalEditarUsuario = function(id, username, email, role, location, isActive, fullName) {
+    console.log('🔧 Abriendo modal de editar usuario:', { id, username, email, role, location, isActive, fullName });
+    
+    // Remover modal existente si existe
+    const existingModal = document.getElementById('modal-editar-usuario');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Crear el modal
+    const modal = document.createElement('div');
+    modal.id = 'modal-editar-usuario';
+    modal.style.cssText = `
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        background: rgba(0, 0, 0, 0.5) !important;
+        z-index: 10000000 !important;
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        font-family: Arial, sans-serif !important;
+    `;
+    
+    modal.innerHTML = `
+        <div style="
+            background: white !important;
+            border-radius: 12px !important;
+            padding: 30px !important;
+            max-width: 500px !important;
+            width: 90% !important;
+            max-height: 90vh !important;
+            overflow-y: auto !important;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+            border: 1px solid #E5E7EB !important;
+        ">
+            <!-- Header -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 2px solid #E5E7EB;">
+                <h2 style="color: #1F2937; font-size: 24px; font-weight: bold; margin: 0;">
+                    ✏️ Editar Usuario
+                </h2>
+                <button onclick="window.cerrarModalEditarUsuario()" style="
+                    background: #EF4444 !important;
+                    color: white !important;
+                    border: none !important;
+                    padding: 8px 12px !important;
+                    border-radius: 6px !important;
+                    cursor: pointer !important;
+                    font-size: 16px !important;
+                    font-weight: bold !important;
+                ">✕</button>
+            </div>
+            
+            <!-- Form -->
+            <form id="form-editar-usuario" style="display: flex; flex-direction: column; gap: 20px;">
+                <div>
+                    <label style="display: block; color: #374151; font-weight: bold; margin-bottom: 8px; font-size: 14px;">
+                        👤 Nombre Completo
+                    </label>
+                    <input type="text" id="edit-fullname" value="${fullName || username || ''}" style="
+                        width: 100% !important;
+                        padding: 12px !important;
+                        border: 2px solid #D1D5DB !important;
+                        border-radius: 8px !important;
+                        font-size: 14px !important;
+                        box-sizing: border-box !important;
+                    " required>
+                </div>
+                
+                <div>
+                    <label style="display: block; color: #374151; font-weight: bold; margin-bottom: 8px; font-size: 14px;">
+                        👤 Nombre de Usuario
+                    </label>
+                    <input type="text" id="edit-username" value="${username}" style="
+                        width: 100% !important;
+                        padding: 12px !important;
+                        border: 2px solid #D1D5DB !important;
+                        border-radius: 8px !important;
+                        font-size: 14px !important;
+                        box-sizing: border-box !important;
+                    " required>
+                </div>
+                
+                <div>
+                    <label style="display: block; color: #374151; font-weight: bold; margin-bottom: 8px; font-size: 14px;">
+                        📧 Email
+                    </label>
+                    <input type="email" id="edit-email" value="${email}" style="
+                        width: 100% !important;
+                        padding: 12px !important;
+                        border: 2px solid #D1D5DB !important;
+                        border-radius: 8px !important;
+                        font-size: 14px !important;
+                        box-sizing: border-box !important;
+                    " required>
+                </div>
+                
+                <div>
+                    <label style="display: block; color: #374151; font-weight: bold; margin-bottom: 8px; font-size: 14px;">
+                        🎭 Rol
+                    </label>
+                    <select id="edit-role" style="
+                        width: 100% !important;
+                        padding: 12px !important;
+                        border: 2px solid #D1D5DB !important;
+                        border-radius: 8px !important;
+                        font-size: 14px !important;
+                        box-sizing: border-box !important;
+                        background: white !important;
+                    ">
+                        <option value="auditor" ${role === 'auditor' ? 'selected' : ''}>Auditor</option>
+                        <option value="admin" ${role === 'admin' ? 'selected' : ''}>Administrador</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label style="display: block; color: #374151; font-weight: bold; margin-bottom: 8px; font-size: 14px;">
+                        📍 Ubicación
+                    </label>
+                    <select id="edit-location" style="
+                        width: 100% !important;
+                        padding: 12px !important;
+                        border: 2px solid #D1D5DB !important;
+                        border-radius: 8px !important;
+                        font-size: 14px !important;
+                        box-sizing: border-box !important;
+                        background: white !important;
+                    ">
+                        <option value="REMOTO" ${location === 'REMOTO' ? 'selected' : ''}>Remoto</option>
+                        <option value="MX" ${location === 'MX' ? 'selected' : ''}>México</option>
+                        <option value="CL" ${location === 'CL' ? 'selected' : ''}>Chile</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label style="display: block; color: #374151; font-weight: bold; margin-bottom: 8px; font-size: 14px;">
+                        🔒 Estado
+                    </label>
+                    <select id="edit-status" style="
+                        width: 100% !important;
+                        padding: 12px !important;
+                        border: 2px solid #D1D5DB !important;
+                        border-radius: 8px !important;
+                        font-size: 14px !important;
+                        box-sizing: border-box !important;
+                        background: white !important;
+                    ">
+                        <option value="true" ${isActive ? 'selected' : ''}>Activo</option>
+                        <option value="false" ${!isActive ? 'selected' : ''}>Inactivo</option>
+                    </select>
+                </div>
+                
+                <!-- Botones -->
+                <div style="display: flex; gap: 12px; margin-top: 20px; padding-top: 20px; border-top: 2px solid #E5E7EB;">
+                    <button type="button" onclick="window.cerrarModalEditarUsuario()" style="
+                        flex: 1 !important;
+                        padding: 12px 20px !important;
+                        background: #6B7280 !important;
+                        color: white !important;
+                        border: none !important;
+                        border-radius: 8px !important;
+                        cursor: pointer !important;
+                        font-weight: bold !important;
+                        font-size: 14px !important;
+                    ">Cancelar</button>
+                    <button type="submit" style="
+                        flex: 1 !important;
+                        padding: 12px 20px !important;
+                        background: #3B82F6 !important;
+                        color: white !important;
+                        border: none !important;
+                        border-radius: 8px !important;
+                        cursor: pointer !important;
+                        font-weight: bold !important;
+                        font-size: 14px !important;
+                    ">💾 Guardar Cambios</button>
+                </div>
+            </form>
+        </div>
+    `;
+    
+    // Agregar al body
+    document.body.appendChild(modal);
+    
+    // Manejar el envío del formulario
+    const form = document.getElementById('form-editar-usuario');
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        window.guardarCambiosUsuario(id);
+    });
+    
+    // Cerrar modal al hacer clic fuera
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+            window.cerrarModalEditarUsuario();
+        }
+    });
+};
+
+// Cerrar modal de editar usuario
+window.cerrarModalEditarUsuario = function() {
+    const modal = document.getElementById('modal-editar-usuario');
+    if (modal) {
+        modal.remove();
+    }
+};
+
+// Guardar cambios del usuario
+window.guardarCambiosUsuario = async function(userId) {
+    console.log('💾 Guardando cambios del usuario:', userId);
+    
+    try {
+        const fullName = document.getElementById('edit-fullname')?.value || '';
+        const username = document.getElementById('edit-username').value;
+        const email = document.getElementById('edit-email').value;
+        const role = document.getElementById('edit-role').value;
+        const location = document.getElementById('edit-location').value;
+        const isActive = document.getElementById('edit-status').value === 'true';
+        
+        const userData = {
+            full_name: fullName,
+            username: username,
+            email: email,
+            role: role,
+            location: location,
+            is_active: isActive
+        };
+        
+        console.log('📝 Datos a guardar:', userData);
+        
+        // Llamada real a la API
+        if (!window.auth || !window.auth.apiRequest) {
+            throw new Error('Sistema de autenticación no disponible');
+        }
+        
+        const response = await window.auth.apiRequest(`/api/users/${userId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json; charset=utf-8',
+            },
+            body: JSON.stringify(userData)
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Error al actualizar el usuario');
+        }
+        
+        const result = await response.json();
+        console.log('✅ Usuario actualizado exitosamente:', result);
+        
+        // Mostrar mensaje de éxito
+        if (window.showNotification) {
+            window.showNotification('success', 'Éxito', `Usuario ${username} actualizado exitosamente`);
+        } else {
+            alert(`✅ Usuario ${username} actualizado exitosamente!`);
+        }
+        
+        // Cerrar modal
+        window.cerrarModalEditarUsuario();
+        
+        // Recargar la tabla de usuarios
+        if (window.userManager && window.userManager.loadUsers) {
+            await window.userManager.loadUsers();
+        } else if (window.abrirGestionUsuarios) {
+            window.abrirGestionUsuarios();
+        }
+    } catch (error) {
+        console.error('❌ Error al guardar cambios del usuario:', error);
+        if (window.showNotification) {
+            window.showNotification('error', 'Error', error.message || 'No se pudieron guardar los cambios');
+        } else {
+            alert(`❌ Error: ${error.message || 'No se pudieron guardar los cambios'}`);
+        }
+    }
+};
+
+// Modal de Eliminar Usuario
+window.abrirModalEliminarUsuario = function(id, username) {
+    console.log('🗑️ Abriendo modal de eliminar usuario:', { id, username });
+    
+    // Remover modal existente si existe
+    const existingModal = document.getElementById('modal-eliminar-usuario');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Crear el modal
+    const modal = document.createElement('div');
+    modal.id = 'modal-eliminar-usuario';
+    modal.style.cssText = `
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        background: rgba(0, 0, 0, 0.5) !important;
+        z-index: 10000000 !important;
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        font-family: Arial, sans-serif !important;
+    `;
+    
+    modal.innerHTML = `
+        <div style="
+            background: white !important;
+            border-radius: 12px !important;
+            padding: 30px !important;
+            max-width: 450px !important;
+            width: 90% !important;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+            border: 2px solid #EF4444 !important;
+        ">
+            <!-- Header -->
+            <div style="text-align: center; margin-bottom: 25px;">
+                <div style="font-size: 48px; margin-bottom: 15px;">⚠️</div>
+                <h2 style="color: #DC2626; font-size: 24px; font-weight: bold; margin: 0; margin-bottom: 10px;">
+                    Eliminar Usuario
+                </h2>
+                <p style="color: #6B7280; font-size: 16px; margin: 0;">
+                    Esta acción no se puede deshacer
+                </p>
+            </div>
+            
+            <!-- Content -->
+            <div style="background: #FEF2F2; border: 1px solid #FECACA; border-radius: 8px; padding: 20px; margin-bottom: 25px;">
+                <p style="color: #DC2626; font-size: 16px; margin: 0; font-weight: bold;">
+                    ¿Estás seguro de que deseas eliminar al usuario?
+                </p>
+                <div style="margin-top: 15px; padding: 15px; background: white; border-radius: 6px; border: 1px solid #E5E7EB;">
+                    <p style="color: #374151; font-size: 14px; margin: 0; font-weight: bold;">
+                        ID: ${id}
+                    </p>
+                    <p style="color: #374151; font-size: 14px; margin: 5px 0 0 0;">
+                        Usuario: ${username}
+                    </p>
+                </div>
+            </div>
+            
+            <!-- Warning -->
+            <div style="background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 8px; padding: 15px; margin-bottom: 25px;">
+                <p style="color: #92400E; font-size: 14px; margin: 0; font-weight: bold;">
+                    ⚠️ Advertencia:
+                </p>
+                <ul style="color: #92400E; font-size: 13px; margin: 8px 0 0 0; padding-left: 20px;">
+                    <li>Se eliminarán todos los datos del usuario</li>
+                    <li>Se revocarán todos los permisos y accesos</li>
+                    <li>Esta acción es irreversible</li>
+                </ul>
+            </div>
+            
+            <!-- Botones -->
+            <div style="display: flex; gap: 12px;">
+                <button onclick="window.cerrarModalEliminarUsuario()" style="
+                    flex: 1 !important;
+                    padding: 12px 20px !important;
+                    background: #6B7280 !important;
+                    color: white !important;
+                    border: none !important;
+                    border-radius: 8px !important;
+                    cursor: pointer !important;
+                    font-weight: bold !important;
+                    font-size: 14px !important;
+                ">Cancelar</button>
+                <button onclick="window.confirmarEliminarUsuario(${id}, '${username}')" style="
+                    flex: 1 !important;
+                    padding: 12px 20px !important;
+                    background: #EF4444 !important;
+                    color: white !important;
+                    border: none !important;
+                    border-radius: 8px !important;
+                    cursor: pointer !important;
+                    font-weight: bold !important;
+                    font-size: 14px !important;
+                ">🗑️ Eliminar Usuario</button>
+            </div>
+        </div>
+    `;
+    
+    // Agregar al body
+    document.body.appendChild(modal);
+    
+    // Cerrar modal al hacer clic fuera
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+            window.cerrarModalEliminarUsuario();
+        }
+    });
+};
+
+// Cerrar modal de eliminar usuario
+window.cerrarModalEliminarUsuario = function() {
+    const modal = document.getElementById('modal-eliminar-usuario');
+    if (modal) {
+        modal.remove();
+    }
+};
+
+// Confirmar eliminación del usuario
+window.confirmarEliminarUsuario = async function(userId, username) {
+    console.log('🗑️ Confirmando eliminación del usuario:', { userId, username });
+    
+    try {
+        // Llamada real a la API
+        if (!window.auth || !window.auth.apiRequest) {
+            throw new Error('Sistema de autenticación no disponible');
+        }
+        
+        const response = await window.auth.apiRequest(`/api/users/${userId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json; charset=utf-8',
+            }
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Error al eliminar el usuario');
+        }
+        
+        const result = await response.json();
+        console.log('✅ Usuario eliminado exitosamente:', result);
+        
+        // Mostrar mensaje de éxito
+        if (window.showNotification) {
+            window.showNotification('success', 'Éxito', `Usuario ${username} eliminado exitosamente`);
+        } else {
+            alert(`✅ Usuario ${username} eliminado exitosamente!`);
+        }
+        
+        // Cerrar modal
+        window.cerrarModalEliminarUsuario();
+        
+        // Recargar la tabla de usuarios
+        if (window.userManager && window.userManager.loadUsers) {
+            await window.userManager.loadUsers();
+        } else if (window.abrirGestionUsuarios) {
+            window.abrirGestionUsuarios();
+        }
+    } catch (error) {
+        console.error('❌ Error al eliminar usuario:', error);
+        if (window.showNotification) {
+            window.showNotification('error', 'Error', error.message || 'No se pudo eliminar el usuario');
+        } else {
+            alert(`❌ Error: ${error.message || 'No se pudo eliminar el usuario'}`);
+        }
+    }
+};
+
+// Function to close users section
+window.closeUsersSection = function() {
+    console.log('🚨 Closing users section');
+    const usersSection = document.getElementById('users-section');
+    if (usersSection) {
+        usersSection.classList.add('hidden');
+        usersSection.style.display = 'none';
+        usersSection.style.visibility = 'hidden';
+        usersSection.style.opacity = '0';
+    }
+};
+
+// Emergency function to force show users
+window.emergencyShowUsers = function() {
+    console.log('🚨 EMERGENCY: Force showing users section');
+    
+    // Create a completely new visible section
+    const emergencySection = document.createElement('div');
+    emergencySection.id = 'emergency-users-section';
+    emergencySection.style.cssText = `
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        background: white !important;
+        z-index: 99999 !important;
+        overflow-y: auto !important;
+        padding: 20px !important;
+        box-sizing: border-box !important;
+    `;
+    
+    emergencySection.innerHTML = `
+        <div style="max-width: 1200px; margin: 0 auto;">
+            <div style="text-align: center; margin-bottom: 30px;">
+                <h1 style="color: #1F2937; font-size: 28px; font-weight: bold; margin-bottom: 10px;">
+                    🚨 Gestión de Usuarios - Vista de Emergencia
+                </h1>
+                <p style="color: #6B7280; font-size: 16px;">
+                    Esta es una vista de emergencia. La sección normal no se pudo mostrar.
+                </p>
+            </div>
+            
+            <div style="background: white; border-radius: 12px; padding: 24px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: 2px solid #EF4444;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2 style="color: #374151; font-size: 20px; font-weight: bold;">
+                        Lista de Usuarios
+                    </h2>
+                    <button onclick="document.getElementById('emergency-users-section').remove()" 
+                            style="background: #EF4444; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold;">
+                        ❌ Cerrar Vista de Emergencia
+                    </button>
+                </div>
+                
+                <div id="emergency-users-table-container" style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse; border: 1px solid #D1D5DB;">
+                        <thead>
+                            <tr style="background: #F3F4F6;">
+                                <th style="border: 1px solid #D1D5DB; padding: 12px; text-align: left; font-weight: bold;">ID</th>
+                                <th style="border: 1px solid #D1D5DB; padding: 12px; text-align: left; font-weight: bold;">Usuario</th>
+                                <th style="border: 1px solid #D1D5DB; padding: 12px; text-align: left; font-weight: bold;">Email</th>
+                                <th style="border: 1px solid #D1D5DB; padding: 12px; text-align: left; font-weight: bold;">Rol</th>
+                                <th style="border: 1px solid #D1D5DB; padding: 12px; text-align: left; font-weight: bold;">Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody id="emergency-users-tbody">
+                            <tr>
+                                <td colspan="5" style="border: 1px solid #D1D5DB; padding: 20px; text-align: center; color: #6B7280;">
+                                    ⏳ Cargando usuarios...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Add to body
+    document.body.appendChild(emergencySection);
+    
+    // Load users data
+    setTimeout(() => {
+        if (window.userManager && window.userManager.users) {
+            const tbody = document.getElementById('emergency-users-tbody');
+            tbody.innerHTML = '';
+            
+            window.userManager.users.forEach((user, index) => {
+                const row = document.createElement('tr');
+                row.style.cssText = `
+                    background: ${index % 2 === 0 ? '#ffffff' : '#F9FAFB'};
+                    border-bottom: 1px solid #E5E7EB;
+                `;
+                row.innerHTML = `
+                    <td style="border: 1px solid #D1D5DB; padding: 10px;">${user.id}</td>
+                    <td style="border: 1px solid #D1D5DB; padding: 10px; font-weight: 500;">${user.username}</td>
+                    <td style="border: 1px solid #D1D5DB; padding: 10px;">${user.email}</td>
+                    <td style="border: 1px solid #D1D5DB; padding: 10px;">
+                        <span style="background: ${user.role === 'admin' ? '#FEF3C7' : '#DBEAFE'}; color: ${user.role === 'admin' ? '#92400E' : '#1E40AF'}; padding: 4px 8px; border-radius: 4px; font-size: 12px;">
+                            ${user.role.toUpperCase()}
+                        </span>
+                    </td>
+                    <td style="border: 1px solid #D1D5DB; padding: 10px;">
+                        <span style="background: ${user.is_active ? '#D1FAE5' : '#FEE2E2'}; color: ${user.is_active ? '#065F46' : '#991B1B'}; padding: 4px 8px; border-radius: 4px; font-size: 12px;">
+                            ${user.is_active ? 'Activo' : 'Inactivo'}
+                        </span>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        } else {
+            const tbody = document.getElementById('emergency-users-tbody');
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="5" style="border: 1px solid #D1D5DB; padding: 20px; text-align: center; color: #EF4444;">
+                        ❌ No se pudieron cargar los usuarios
+                    </td>
+                </tr>
+            `;
+        }
+    }, 500);
+};
 
 // Handle global errors
 window.addEventListener('error', function(event) {

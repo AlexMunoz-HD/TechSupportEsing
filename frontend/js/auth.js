@@ -16,12 +16,15 @@ class Auth {
             const response = await fetch(`${this.apiBase}/auth/login`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
+                    'Content-Type': 'application/json; charset=utf-8',
+                    'Accept': 'application/json; charset=utf-8',
                 },
                 body: JSON.stringify({ email, password })
             });
 
-            const data = await response.json();
+            // Ensure UTF-8 decoding
+            const text = await response.text();
+            const data = JSON.parse(text);
 
             if (!response.ok) {
                 throw new Error(data.error || 'Login failed');
@@ -71,7 +74,8 @@ class Auth {
     // Make authenticated API request
     async apiRequest(url, options = {}) {
         const headers = {
-            'Content-Type': 'application/json',
+            'Content-Type': 'application/json; charset=utf-8',
+            'Accept': 'application/json; charset=utf-8',
             ...this.getAuthHeader(),
             ...options.headers
         };
@@ -100,7 +104,9 @@ class Auth {
                 body: JSON.stringify({ currentPassword, newPassword })
             });
 
-            const data = await response.json();
+            // Ensure UTF-8 decoding
+            const text = await response.text();
+            const data = JSON.parse(text);
 
             if (!response.ok) {
                 throw new Error(data.error || 'Password change failed');
@@ -117,7 +123,9 @@ class Auth {
     async getProfile() {
         try {
             const response = await this.apiRequest('/auth/profile');
-            const data = await response.json();
+            // Ensure UTF-8 decoding
+            const text = await response.text();
+            const data = JSON.parse(text);
 
             if (!response.ok) {
                 throw new Error(data.error || 'Failed to get profile');
@@ -266,8 +274,19 @@ async function changePassword() {
     }
 }
 
+// Bandera para evitar múltiples inicializaciones
+let appInitialized = false;
+
 // Initialize app based on authentication status
 function initializeApp() {
+    // Evitar múltiples inicializaciones
+    if (appInitialized) {
+        console.log('⏸️ App ya inicializada, ignorando llamada duplicada');
+        return;
+    }
+    
+    appInitialized = true;
+    console.log('🚀 Inicializando app...');
     
     if (auth.isAuthenticated()) {
         
@@ -287,6 +306,9 @@ function initializeApp() {
         
         // Update user info in header
         updateUserInfo();
+        
+        // Disparar evento de autenticación para que otros módulos se inicialicen
+        window.dispatchEvent(new Event('userAuthenticated'));
         
         // Initialize dashboard after a short delay to ensure auth is ready
         setTimeout(() => {
@@ -371,6 +393,9 @@ function showLoginSuccessAnimation() {
     
     // After animation completes, redirect to dashboard
     setTimeout(() => {
+        // Reset la bandera para permitir reinicialización después del login
+        appInitialized = false;
+        
         // Hide login screen and show dashboard
         document.getElementById('loginScreen').classList.add('hidden');
         document.getElementById('dashboard').classList.remove('hidden');
@@ -385,10 +410,11 @@ function showLoginSuccessAnimation() {
         // Update user info in header
         updateUserInfo();
         
-        // Initialize dashboard after a short delay to ensure auth is ready
-        setTimeout(() => {
-            initializeDashboard();
-        }, 100);
+        // Disparar evento de autenticación para que otros módulos se inicialicen
+        window.dispatchEvent(new Event('userAuthenticated'));
+        
+        // Reinicializar app (que inicializará el dashboard)
+        initializeApp();
         
         // Hide animation after dashboard is ready
         setTimeout(() => {

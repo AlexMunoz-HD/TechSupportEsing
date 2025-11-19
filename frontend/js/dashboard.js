@@ -325,12 +325,14 @@ class Dashboard {
             return;
         }
         
-        const totalUsers = Object.values(data.userStats).reduce((sum, count) => sum + count, 0);
+        // Use totalUsers from Snipe-IT if available, otherwise calculate from userStats
+        const totalUsers = data.totalUsers || Object.values(data.userStats).reduce((sum, count) => sum + count, 0);
         const availableAssets = data.assetStats.available || 0;
         const assignedAssets = data.assetStats.assigned || 0;
         const todayActivity = data.recentLogs ? data.recentLogs.length : 0;
+        const dataSource = data.source || 'Unknown';
 
-        console.log('Calculated values:', { totalUsers, availableAssets, assignedAssets, todayActivity });
+        console.log('Calculated values:', { totalUsers, availableAssets, assignedAssets, todayActivity, dataSource });
 
         const totalUsersEl = document.getElementById('totalUsers');
         const availableAssetsEl = document.getElementById('availableAssets');
@@ -345,24 +347,42 @@ class Dashboard {
         });
 
         if (totalUsersEl) {
-            totalUsersEl.textContent = totalUsers;
-            console.log('Updated totalUsers to:', totalUsers);
+            totalUsersEl.textContent = totalUsers || '0';
+            console.log('✅ Updated totalUsers to:', totalUsers);
+            
+            // Update source indicator
+            const totalUsersSource = document.getElementById('totalUsersSource');
+            if (totalUsersSource) {
+                totalUsersSource.textContent = dataSource || 'Snipe-IT';
+            }
         } else {
-            console.error('totalUsers element not found!');
+            console.error('❌ totalUsers element not found!');
         }
         
         if (availableAssetsEl) {
-            availableAssetsEl.textContent = availableAssets;
-            console.log('Updated availableAssets to:', availableAssets);
+            availableAssetsEl.textContent = availableAssets || '0';
+            console.log('✅ Updated availableAssets to:', availableAssets);
+            
+            // Update source indicator
+            const availableAssetsSource = document.getElementById('availableAssetsSource');
+            if (availableAssetsSource) {
+                availableAssetsSource.textContent = dataSource || 'Snipe-IT';
+            }
         } else {
-            console.error('availableAssets element not found!');
+            console.error('❌ availableAssets element not found!');
         }
         
         if (assignedAssetsEl) {
-            assignedAssetsEl.textContent = assignedAssets;
-            console.log('Updated assignedAssets to:', assignedAssets);
+            assignedAssetsEl.textContent = assignedAssets || '0';
+            console.log('✅ Updated assignedAssets to:', assignedAssets);
+            
+            // Update source indicator
+            const assignedAssetsSource = document.getElementById('assignedAssetsSource');
+            if (assignedAssetsSource) {
+                assignedAssetsSource.textContent = dataSource || 'Snipe-IT';
+            }
         } else {
-            console.error('assignedAssets element not found!');
+            console.error('❌ assignedAssets element not found!');
         }
         
         if (todayActivityEl) {
@@ -861,38 +881,30 @@ function initializeDashboard() {
 }
 
 // Wait for auth to be ready and then load dashboard data
+let authCheckAttempts = 0;
+const MAX_AUTH_CHECK_ATTEMPTS = 50; // Máximo 5 segundos (50 * 100ms)
+
 function waitForAuthAndLoadData() {
     console.log('Waiting for auth to be ready...');
+    authCheckAttempts = 0;
     
     const checkAuth = () => {
+        authCheckAttempts++;
+        
         if (window.auth && window.auth.token) {
             console.log('Auth is ready, loading dashboard data...');
             window.dashboardManager.loadDashboardData();
-        } else {
-            console.log('Auth not ready yet, retrying in 100ms...');
+            authCheckAttempts = 0; // Reset counter
+        } else if (authCheckAttempts < MAX_AUTH_CHECK_ATTEMPTS) {
+            console.log(`Auth not ready yet, retrying in 100ms... (attempt ${authCheckAttempts}/${MAX_AUTH_CHECK_ATTEMPTS})`);
             setTimeout(checkAuth, 100);
+        } else {
+            console.error('❌ Auth check timeout - maximum attempts reached');
+            authCheckAttempts = 0; // Reset counter
         }
     };
     
     checkAuth();
-}
-
-// Test dashboard function
-function testDashboard() {
-    console.log('Testing dashboard...');
-    console.log('Auth object:', window.auth);
-    console.log('Dashboard object:', window.dashboardManager);
-    
-    if (window.dashboardManager) {
-        console.log('Calling loadDashboardData...');
-        window.dashboardManager.loadDashboardData();
-    } else {
-        console.log('Dashboard not initialized, initializing now...');
-        initializeDashboard();
-        if (window.dashboardManager) {
-            window.dashboardManager.loadDashboardData();
-        }
-    }
 }
 
 // Show section
@@ -975,6 +987,5 @@ function showSection(sectionId) {
 
 // Global functions for dashboard
 window.showSection = showSection;
-window.testDashboard = testDashboard;
 window.clearNotifications = clearNotifications;
 window.initializeDashboard = initializeDashboard;

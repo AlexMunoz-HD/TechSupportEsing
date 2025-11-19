@@ -151,10 +151,10 @@ class ShortcutManager {
             });
         }, 'Cerrar modales');
 
-        // Help shortcut
-        this.register('F1', () => {
-            this.showShortcutsHelp();
-        }, 'Mostrar ayuda de atajos');
+        // Help shortcut - popup removed
+        // this.register('F1', () => {
+        //     this.showShortcutsHelp();
+        // }, 'Mostrar ayuda de atajos');
 
         // Refresh data
         this.register('Ctrl+r', () => {

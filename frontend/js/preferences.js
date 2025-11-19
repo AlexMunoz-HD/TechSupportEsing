@@ -143,23 +143,26 @@ class PreferencesManager {
 
     // Apply theme to document
     applyTheme() {
-        const body = document.body;
         const html = document.documentElement;
 
-        // Remove existing theme classes
-        body.classList.remove('light-theme', 'dark-theme');
-        html.classList.remove('light-theme', 'dark-theme');
+        // Remove existing theme attributes
+        html.removeAttribute('data-theme');
+        html.classList.remove('light-theme', 'dark-theme', 'auto-theme');
 
         if (this.currentTheme === 'auto') {
             // Check system preference
             const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            const themeClass = prefersDark ? 'dark-theme' : 'light-theme';
-            body.classList.add(themeClass);
-            html.classList.add(themeClass);
+            html.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
         } else {
-            const themeClass = `${this.currentTheme}-theme`;
-            body.classList.add(themeClass);
-            html.classList.add(themeClass);
+            html.setAttribute('data-theme', this.currentTheme);
+        }
+
+        // Also sync with themeManager if it exists
+        if (window.themeManager) {
+            const themeToApply = this.currentTheme === 'auto' 
+                ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+                : this.currentTheme;
+            window.themeManager.applyTheme(themeToApply);
         }
 
         // Update theme toggle button
@@ -264,27 +267,9 @@ class PreferencesManager {
         });
     }
 
-    // Update shortcuts display
+    // Update shortcuts display - removed (shortcuts section removed from UI)
     updateShortcutsDisplay(shortcuts) {
-        const shortcutsList = document.getElementById('shortcutsList');
-        if (!shortcutsList) return;
-
-        shortcutsList.innerHTML = '';
-
-        Object.entries(shortcuts).forEach(([key, action]) => {
-            const shortcutItem = document.createElement('div');
-            shortcutItem.className = 'flex justify-between items-center p-3 bg-gray-50 rounded-lg';
-            shortcutItem.innerHTML = `
-                <div class="flex items-center space-x-3">
-                    <kbd class="px-2 py-1 bg-gray-200 rounded text-sm font-mono">${key}</kbd>
-                    <span class="text-sm text-gray-700">${this.getActionDescription(action)}</span>
-                </div>
-                <button onclick="editShortcut('${key}')" class="text-blue-600 hover:text-blue-800 text-sm">
-                    <i class="fas fa-edit"></i>
-                </button>
-            `;
-            shortcutsList.appendChild(shortcutItem);
-        });
+        // Shortcuts display removed from preferences modal
     }
 
     // Get action description
@@ -358,7 +343,7 @@ class PreferencesManager {
                 this.showHelp();
                 break;
             case 'show_shortcuts':
-                this.showShortcuts();
+                // Shortcuts popup removed
                 break;
         }
     }
@@ -368,12 +353,9 @@ class PreferencesManager {
         alert('Sistema de ayuda en desarrollo');
     }
 
-    // Show shortcuts
+    // Show shortcuts - removed
     showShortcuts() {
-        const modal = document.getElementById('shortcutsModal');
-        if (modal) {
-            modal.classList.remove('hidden');
-        }
+        // Shortcuts popup removed
     }
 
     // Edit shortcut
@@ -425,17 +407,9 @@ function closePreferencesModal() {
     }
 }
 
-function closeShortcutsModal() {
-    const modal = document.getElementById('shortcutsModal');
-    if (modal) {
-        modal.classList.add('hidden');
-    }
-}
-
 // Global functions
 window.showPreferencesModal = showPreferencesModal;
 window.closePreferencesModal = closePreferencesModal;
-window.closeShortcutsModal = closeShortcutsModal;
 window.editShortcut = (key) => {
     if (window.preferencesManager) {
         window.preferencesManager.editShortcut(key);

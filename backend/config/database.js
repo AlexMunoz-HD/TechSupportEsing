@@ -13,7 +13,14 @@ const dbConfig = {
   connectionLimit: 10,
   queueLimit: 0,
   acquireTimeout: 60000,
-  timeout: 60000
+  timeout: 60000,
+  // Ensure UTF-8 encoding
+  typeCast: function (field, next) {
+    if (field.type === 'VAR_STRING' || field.type === 'STRING' || field.type === 'TEXT') {
+      return field.string();
+    }
+    return next();
+  }
 };
 
 // Create connection pool
@@ -46,6 +53,8 @@ async function testConnection() {
 // Execute query with error handling
 async function executeQuery(query, params = []) {
   try {
+    // Use pool.execute which automatically handles connection management
+    // The charset is already set in dbConfig, but we ensure it's set for each query
     const [results] = await pool.execute(query, params);
     return results;
   } catch (error) {
